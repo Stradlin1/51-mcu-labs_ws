@@ -1,23 +1,16 @@
 #include <reg52.h>
 
-sbit HC138_A = P2^5;
-sbit HC138_B = P2^6;
-sbit HC138_C = P2^7;
-
-
 void Delay(unsigned int t)
 {
     while(t--);
     while(t--);
 }
 
-
 void Delay500ms()
 {
     Delay(60000);
     Delay(60000);
 }
-
 
 void Delay3s()
 {
@@ -29,22 +22,16 @@ void Delay3s()
     }
 }
 
-
 void LED_Write(unsigned char dat)
 {
-    HC138_C = 1;
-    HC138_B = 0;
-    HC138_A = 0;
+    P2 = (P2 & 0x1F) | 0x80;
 
     P0 = dat;
 
-    HC138_C = 0;
-    HC138_B = 0;
-    HC138_A = 0;
+    P2 = (P2 & 0x1F) | 0xA0;
 
     P0 = 0x00;
 }
-
 
 void main()
 {
@@ -53,10 +40,9 @@ void main()
     unsigned char led_data;
 
     P0 = 0x00;
+    P2 = (P2 & 0x1F) | 0xA0;
 
-    HC138_C = 0;
-    HC138_B = 0;
-    HC138_A = 0;
+    LED_Write(0xFF);
 
     for(round = 0; round < 3; round++)
     {

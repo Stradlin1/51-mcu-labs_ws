@@ -1,81 +1,66 @@
 #include <reg52.h>
 
-sbit HC138_A = P2^5;
-sbit HC138_B = P2^6;
-sbit HC138_C = P2^7;
-
-sbit RELAY = P0^4;
-sbit BEEP  = P0^6;
-
-
 void Delay(unsigned int t)
 {
     while(t--);
     while(t--);
 }
 
-
-
-void LED_Write(unsigned char dat)
+void System_Init()
 {
-    
-    HC138_C = 1;
-    HC138_B = 0;
-    HC138_A = 0;
+    P2 = (P2 & 0x1F) | 0xE0;
+    P0 = 0xFF;
 
-    
-    P0 = dat;
+    P2 = (P2 & 0x1F) | 0xC0;
+    P0 = 0x00;
 
-    HC138_C = 1;
-    HC138_B = 0;
-    HC138_A = 1;
+    P2 = (P2 & 0x1F) | 0x80;
+    P0 = 0xFF;
 
-
+    P2 = (P2 & 0x1F) | 0xA0;
     P0 = 0x00;
 }
 
+void LED_Write(unsigned char dat)
+{
+    P2 = (P2 & 0x1F) | 0x80;
+    P0 = dat;
+
+    P2 = (P2 & 0x1F) | 0xA0;
+    P0 = 0x00;
+}
+
+void Actuator_Write(unsigned char dat)
+{
+    P2 = (P2 & 0x1F) | 0xA0;
+    P0 = dat;
+}
 
 void main()
 {
     unsigned char i;
 
-    P0 = 0x00;
-
-    HC138_A = 0;
-    HC138_B = 0;
-    HC138_C = 0;
-
-
+    System_Init();
 
     for(i = 0; i < 3; i++)
     {
-        LED_Write(0x00);      
+        LED_Write(0x00);
         Delay(60000);
         Delay(60000);
 
-        LED_Write(0xFF);      
-
+        LED_Write(0xFF);
         Delay(60000);
         Delay(60000);
     }
 
-
-
     LED_Write(0xFF);
 
-
-    
-
-    RELAY = 1;       
-
-    BEEP = 1;        
+    Actuator_Write(0x50);
 
     Delay(60000);
     Delay(60000);
 
-    BEEP = 0;        
-
-   
+    Actuator_Write(0x10);
 
     while(1);
 }

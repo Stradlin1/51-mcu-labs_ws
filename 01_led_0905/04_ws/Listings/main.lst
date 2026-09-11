@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  09/05/2026 13:16:55 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 13:34:08 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -32,55 +32,64 @@ line level    source
   22   2          }
   23   1      }
   24          
-  25          void LED_Write(unsigned char dat)
+  25          void Display_Init()
   26          {
-  27   1          P2 = (P2 & 0x1F) | 0x80;
-  28   1      
-  29   1          P0 = dat;
-  30   1      
-  31   1          P2 = (P2 & 0x1F) | 0xA0;
+  27   1          P2 = (P2 & 0x1F) | 0xC0;
+  28   1          P0 = 0x00;
+  29   1      
+  30   1          P2 = (P2 & 0x1F) | 0xE0;
+  31   1          P0 = 0xFF;
   32   1      
-  33   1          P0 = 0x00;
-  34   1      }
-  35          
-  36          void main()
-  37          {
-  38   1          unsigned char round;
-  39   1          unsigned char i;
-  40   1          unsigned char led_data;
+  33   1          P2 = (P2 & 0x1F) | 0xA0;
+  34   1          P0 = 0x00;
+  35   1      }
+  36          
+  37          void LED_Write(unsigned char dat)
+  38          {
+  39   1          P2 = (P2 & 0x1F) | 0x80;
+  40   1          P0 = dat;
   41   1      
-  42   1          P0 = 0x00;
-  43   1          P2 = (P2 & 0x1F) | 0xA0;
-  44   1      
-  45   1          LED_Write(0xFF);
-  46   1      
-  47   1          for(round = 0; round < 3; round++)
-  48   1          {
-  49   2              led_data = 0xFF;
-  50   2      
-  51   2              for(i = 0; i < 8; i++)
-  52   2              {
-  53   3                  led_data = led_data << 1;
-  54   3      
-C51 COMPILER V9.54   MAIN                                                                  09/05/2026 13:16:55 PAGE 2   
+  42   1          P2 = (P2 & 0x1F) | 0xA0;
+  43   1          P0 = 0x00;
+  44   1      }
+  45          
+  46          void main()
+  47          {
+  48   1          unsigned char round;
+  49   1          unsigned char i;
+  50   1          unsigned char led_data;
+  51   1      
+  52   1          Display_Init();
+  53   1      
+  54   1          LED_Write(0xFF);
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 13:34:08 PAGE 2   
 
-  55   3                  LED_Write(led_data);
-  56   3      
-  57   3                  Delay500ms();
-  58   3              }
+  55   1      
+  56   1          for(round = 0; round < 3; round++)
+  57   1          {
+  58   2              led_data = 0xFF;
   59   2      
-  60   2              if(round < 2)
+  60   2              for(i = 0; i < 8; i++)
   61   2              {
-  62   3                  Delay3s();
-  63   3              }
-  64   2          }
-  65   1      
-  66   1          while(1);
-  67   1      }
+  62   3                  led_data = led_data << 1;
+  63   3      
+  64   3                  LED_Write(led_data);
+  65   3      
+  66   3                  Delay500ms();
+  67   3              }
+  68   2      
+  69   2              if(round < 2)
+  70   2              {
+  71   3                  Delay3s();
+  72   3              }
+  73   2          }
+  74   1      
+  75   1          while(1);
+  76   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    119    ----
+   CODE SIZE        =    145    ----
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----

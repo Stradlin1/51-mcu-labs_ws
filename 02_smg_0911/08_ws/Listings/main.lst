@@ -1,0 +1,173 @@
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 15:26:33 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          unsigned char code table[] = {
+   4              0xc0, 0xf9, 0xa4, 0xb0,
+   5              0x99, 0x92, 0x82, 0xf8,
+   6              0x80, 0x90
+   7          };
+   8          
+   9          volatile unsigned char count0 = 0;
+  10          volatile unsigned char count1 = 0;
+  11          volatile unsigned char second = 0;
+  12          volatile unsigned char led_flag = 0;
+  13          
+  14          unsigned char led_data = 0xFF;
+  15          
+  16          void Delay(unsigned int t)
+  17          {
+  18   1          while(t--);
+  19   1      }
+  20          
+  21          void WriteLED()
+  22          {
+  23   1          P2 = (P2 & 0x1F) | 0x80;
+  24   1          P0 = led_data;
+  25   1      
+  26   1          P2 = (P2 & 0x1F) | 0xC0;
+  27   1          P0 = 0x00;
+  28   1      }
+  29          
+  30          void InitBoard()
+  31          {
+  32   1          P2 = (P2 & 0x1F) | 0xA0;
+  33   1          P0 = 0x00;
+  34   1      
+  35   1          P2 = (P2 & 0x1F) | 0xE0;
+  36   1          P0 = 0xFF;
+  37   1      
+  38   1          P2 = (P2 & 0x1F) | 0xC0;
+  39   1          P0 = 0x00;
+  40   1      
+  41   1          led_data = 0xFF;
+  42   1          WriteLED();
+  43   1      }
+  44          
+  45          void TimerInit()
+  46          {
+  47   1          TMOD = 0x11;
+  48   1      
+  49   1          TH0 = 0x3C;
+  50   1          TL0 = 0xB0;
+  51   1      
+  52   1          TH1 = 0x3C;
+  53   1          TL1 = 0xB0;
+  54   1      
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 15:26:33 PAGE 2   
+
+  55   1          EA = 1;
+  56   1          ET0 = 1;
+  57   1          ET1 = 1;
+  58   1      
+  59   1          TR0 = 1;
+  60   1          TR1 = 1;
+  61   1      }
+  62          
+  63          void ScanDisplay()
+  64          {
+  65   1          unsigned char tens;
+  66   1          unsigned char units;
+  67   1      
+  68   1          tens = second / 10;
+  69   1          units = second % 10;
+  70   1      
+  71   1          P2 = (P2 & 0x1F) | 0xC0;
+  72   1          P0 = 0x00;
+  73   1      
+  74   1          P2 = (P2 & 0x1F) | 0xE0;
+  75   1          P0 = table[tens];
+  76   1      
+  77   1          P2 = (P2 & 0x1F) | 0xC0;
+  78   1          P0 = 0x01;
+  79   1      
+  80   1          Delay(300);
+  81   1      
+  82   1          P0 = 0x00;
+  83   1      
+  84   1          P2 = (P2 & 0x1F) | 0xE0;
+  85   1          P0 = table[units];
+  86   1      
+  87   1          P2 = (P2 & 0x1F) | 0xC0;
+  88   1          P0 = 0x02;
+  89   1      
+  90   1          Delay(300);
+  91   1      
+  92   1          P0 = 0x00;
+  93   1      }
+  94          
+  95          void main()
+  96          {
+  97   1          InitBoard();
+  98   1          TimerInit();
+  99   1      
+ 100   1          while(1)
+ 101   1          {
+ 102   2              ScanDisplay();
+ 103   2      
+ 104   2              if(led_flag)
+ 105   2              {
+ 106   3                  led_flag = 0;
+ 107   3                  led_data ^= 0x01;
+ 108   3                  WriteLED();
+ 109   3              }
+ 110   2          }
+ 111   1      }
+ 112          
+ 113          void Timer0() interrupt 1
+ 114          {
+ 115   1          TH0 = 0x3C;
+ 116   1          TL0 = 0xB0;
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 15:26:33 PAGE 3   
+
+ 117   1      
+ 118   1          count0++;
+ 119   1      
+ 120   1          if(count0 >= 4)
+ 121   1          {
+ 122   2              count0 = 0;
+ 123   2              led_flag = 1;
+ 124   2          }
+ 125   1      }
+ 126          
+ 127          void Timer1() interrupt 3
+ 128          {
+ 129   1          TH1 = 0x3C;
+ 130   1          TL1 = 0xB0;
+ 131   1      
+ 132   1          count1++;
+ 133   1      
+ 134   1          if(count1 >= 20)
+ 135   1          {
+ 136   2              count1 = 0;
+ 137   2      
+ 138   2              second++;
+ 139   2      
+ 140   2              if(second >= 60)
+ 141   2              {
+ 142   3                  second = 0;
+ 143   3              }
+ 144   2          }
+ 145   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    289    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      5    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

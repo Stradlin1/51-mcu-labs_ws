@@ -1,0 +1,127 @@
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:24:25 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          unsigned char code table[] = {
+   4              0xc0, 0xf9, 0xa4, 0xb0,
+   5              0x99, 0x92, 0x82, 0xf8,
+   6              0x80, 0x90, 0x88, 0x83,
+   7              0xc6, 0xa1, 0x86, 0x8e,
+   8              0xbf
+   9          };
+  10          
+  11          unsigned char display_buf[8];
+  12          
+  13          void Delay(unsigned int t)
+  14          {
+  15   1          while(t--);
+  16   1      }
+  17          
+  18          void InitBoard()
+  19          {
+  20   1          P0 = 0x00;
+  21   1      
+  22   1          P2 = (P2 & 0x1F) | 0xA0;
+  23   1          P0 = 0x00;
+  24   1      
+  25   1          P2 = (P2 & 0x1F) | 0xE0;
+  26   1          P0 = 0xFF;
+  27   1      
+  28   1          P2 = (P2 & 0x1F) | 0xC0;
+  29   1          P0 = 0x00;
+  30   1      
+  31   1          P2 = (P2 & 0x1F) | 0x80;
+  32   1          P0 = 0xFF;
+  33   1      
+  34   1          P2 = (P2 & 0x1F) | 0xC0;
+  35   1          P0 = 0x00;
+  36   1      }
+  37          
+  38          void UpdateDisplay(unsigned char month)
+  39          {
+  40   1          display_buf[0] = 2;
+  41   1          display_buf[1] = 0;
+  42   1          display_buf[2] = 2;
+  43   1          display_buf[3] = 5;
+  44   1          display_buf[4] = 16;
+  45   1          display_buf[5] = 16;
+  46   1          display_buf[6] = month / 10;
+  47   1          display_buf[7] = month % 10;
+  48   1      }
+  49          
+  50          void ScanDisplay()
+  51          {
+  52   1          unsigned char i;
+  53   1          unsigned char position;
+  54   1      
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:24:25 PAGE 2   
+
+  55   1          position = 0x01;
+  56   1      
+  57   1          for(i = 0; i < 8; i++)
+  58   1          {
+  59   2              P2 = (P2 & 0x1F) | 0xC0;
+  60   2              P0 = 0x00;
+  61   2      
+  62   2              P2 = (P2 & 0x1F) | 0xE0;
+  63   2              P0 = table[display_buf[i]];
+  64   2      
+  65   2              P2 = (P2 & 0x1F) | 0xC0;
+  66   2              P0 = position;
+  67   2      
+  68   2              Delay(300);
+  69   2      
+  70   2              P0 = 0x00;
+  71   2      
+  72   2              position = position << 1;
+  73   2          }
+  74   1      }
+  75          
+  76          void main()
+  77          {
+  78   1          unsigned char month;
+  79   1          unsigned int t;
+  80   1      
+  81   1          InitBoard();
+  82   1      
+  83   1          month = 1;
+  84   1      
+  85   1          while(1)
+  86   1          {
+  87   2              UpdateDisplay(month);
+  88   2      
+  89   2              for(t = 0; t < 500; t++)
+  90   2              {
+  91   3                  ScanDisplay();
+  92   3              }
+  93   2      
+  94   2              month++;
+  95   2      
+  96   2              if(month > 12)
+  97   2              {
+  98   3                  month = 1;
+  99   3              }
+ 100   2          }
+ 101   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    213    ----
+   CONSTANT SIZE    =     17    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      8       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

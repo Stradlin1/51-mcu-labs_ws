@@ -1,0 +1,102 @@
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:09:18 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          unsigned char code table[] = {
+   4              0xc0, 0xf9, 0xa4, 0xb0,
+   5              0x99, 0x92, 0x82, 0xf8,
+   6              0x80, 0x90, 0x88, 0x83,
+   7              0xc6, 0xa1, 0x86, 0x8e
+   8          };
+   9          
+  10          unsigned char code bit_table[] = {
+  11              0x01, 0x02, 0x04, 0x08,
+  12              0x10, 0x20, 0x40, 0x80
+  13          };
+  14          
+  15          void Delay(unsigned int t)
+  16          {
+  17   1          while(t--);
+  18   1      }
+  19          
+  20          void InitBoard()
+  21          {
+  22   1          P2 = (P2 & 0x1F) | 0xE0;
+  23   1          P0 = 0xFF;
+  24   1      
+  25   1          P2 = (P2 & 0x1F) | 0xC0;
+  26   1          P0 = 0x00;
+  27   1      
+  28   1          P2 = (P2 & 0x1F) | 0xA0;
+  29   1          P0 = 0x00;
+  30   1      
+  31   1          P2 = (P2 & 0x1F) | 0xC0;
+  32   1          P0 = 0xFF;
+  33   1      
+  34   1          P2 = (P2 & 0x1F) | 0x80;
+  35   1          P0 = 0xFF;
+  36   1      
+  37   1          P2 = (P2 & 0x1F) | 0xC0;
+  38   1          P0 = 0x00;
+  39   1      }
+  40          
+  41          void Display(unsigned char position, unsigned char num)
+  42          {
+  43   1          P0 = 0xFF;
+  44   1      
+  45   1          P2 = (P2 & 0x1F) | 0xC0;
+  46   1          P0 = position;
+  47   1      
+  48   1          P2 = (P2 & 0x1F) | 0xE0;
+  49   1          P0 = table[num];
+  50   1      }
+  51          
+  52          void main()
+  53          {
+  54   1          unsigned char i;
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:09:18 PAGE 2   
+
+  55   1          unsigned char num;
+  56   1      
+  57   1          InitBoard();
+  58   1      
+  59   1          while(1)
+  60   1          {
+  61   2              for(i = 0; i < 8; i++)
+  62   2              {
+  63   3                  for(num = 0; num < 16; num++)
+  64   3                  {
+  65   4                      Display(bit_table[i], num);
+  66   4                      Delay(60000);
+  67   4                  }
+  68   3              }
+  69   2      
+  70   2              for(num = 0; num < 16; num++)
+  71   2              {
+  72   3                  Display(0xFF, num);
+  73   3                  Delay(60000);
+  74   3              }
+  75   2          }
+  76   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    158    ----
+   CONSTANT SIZE    =     24    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

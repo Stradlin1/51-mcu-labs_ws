@@ -1,0 +1,89 @@
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:13:15 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          unsigned char code table[] = {
+   4              0xc0, 0xf9, 0xa4, 0xb0,
+   5              0x99, 0x92, 0x82, 0xf8,
+   6              0x80, 0x90, 0x88, 0x83,
+   7              0xc6, 0xa1, 0x86, 0x8e
+   8          };
+   9          
+  10          void Delay(unsigned int t)
+  11          {
+  12   1          while(t--);
+  13   1      }
+  14          
+  15          void InitBoard()
+  16          {
+  17   1          P0 = 0x00;
+  18   1      
+  19   1          P2 = (P2 & 0x1F) | 0xA0;
+  20   1          P0 = 0x00;
+  21   1      
+  22   1          P2 = (P2 & 0x1F) | 0xE0;
+  23   1          P0 = 0xFF;
+  24   1      
+  25   1          P2 = (P2 & 0x1F) | 0xC0;
+  26   1          P0 = 0x00;
+  27   1      
+  28   1          P0 = 0xFF;
+  29   1          P2 = (P2 & 0x1F) | 0x80;
+  30   1          P0 = 0xFF;
+  31   1      
+  32   1          P2 = (P2 & 0x1F) | 0xC0;
+  33   1          P0 = 0x00;
+  34   1      }
+  35          
+  36          void ShowOne(unsigned char position, unsigned char num)
+  37          {
+  38   1          P2 = (P2 & 0x1F) | 0xC0;
+  39   1          P0 = position;
+  40   1      
+  41   1          P2 = (P2 & 0x1F) | 0xE0;
+  42   1          P0 = table[num];
+  43   1      
+  44   1          Delay(60000);
+  45   1      
+  46   1          P0 = 0xFF;
+  47   1      
+  48   1          P2 = (P2 & 0x1F) | 0xC0;
+  49   1          P0 = 0x00;
+  50   1      }
+  51          
+  52          void main()
+  53          {
+  54   1          InitBoard();
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:13:15 PAGE 2   
+
+  55   1      
+  56   1          while(1)
+  57   1          {
+  58   2              ShowOne(0x01, 1);
+  59   2              ShowOne(0x02, 2);
+  60   2              ShowOne(0x04, 3);
+  61   2              ShowOne(0x08, 4);
+  62   2          }
+  63   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    150    ----
+   CONSTANT SIZE    =     16    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

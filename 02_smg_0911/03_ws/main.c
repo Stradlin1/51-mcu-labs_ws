@@ -1,0 +1,63 @@
+#include <reg52.h>
+
+unsigned char code table[] = {
+    0xc0, 0xf9, 0xa4, 0xb0,
+    0x99, 0x92, 0x82, 0xf8,
+    0x80, 0x90, 0x88, 0x83,
+    0xc6, 0xa1, 0x86, 0x8e
+};
+
+void Delay(unsigned int t)
+{
+    while(t--);
+}
+
+void InitBoard()
+{
+    P0 = 0x00;
+
+    P2 = (P2 & 0x1F) | 0xA0;
+    P0 = 0x00;
+
+    P2 = (P2 & 0x1F) | 0xE0;
+    P0 = 0xFF;
+
+    P2 = (P2 & 0x1F) | 0xC0;
+    P0 = 0x00;
+
+    P0 = 0xFF;
+    P2 = (P2 & 0x1F) | 0x80;
+    P0 = 0xFF;
+
+    P2 = (P2 & 0x1F) | 0xC0;
+    P0 = 0x00;
+}
+
+void ShowOne(unsigned char position, unsigned char num)
+{
+    P2 = (P2 & 0x1F) | 0xC0;
+    P0 = position;
+
+    P2 = (P2 & 0x1F) | 0xE0;
+    P0 = table[num];
+
+    Delay(60000);
+
+    P0 = 0xFF;
+
+    P2 = (P2 & 0x1F) | 0xC0;
+    P0 = 0x00;
+}
+
+void main()
+{
+    InitBoard();
+
+    while(1)
+    {
+        ShowOne(0x01, 1);
+        ShowOne(0x02, 2);
+        ShowOne(0x04, 3);
+        ShowOne(0x08, 4);
+    }
+}

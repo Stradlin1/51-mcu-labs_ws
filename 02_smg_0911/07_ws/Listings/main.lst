@@ -1,0 +1,91 @@
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:54:53 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          unsigned char led_data = 0xFF;
+   4          unsigned char count1 = 0;
+   5          unsigned char count8 = 0;
+   6          
+   7          void InitBoard()
+   8          {
+   9   1          P0 = 0x00;
+  10   1      
+  11   1          P2 = (P2 & 0x1F) | 0xA0;
+  12   1          P0 = 0x00;
+  13   1      
+  14   1          P2 = (P2 & 0x1F) | 0xE0;
+  15   1          P0 = 0xFF;
+  16   1      
+  17   1          P2 = (P2 & 0x1F) | 0xC0;
+  18   1          P0 = 0x00;
+  19   1      
+  20   1          P2 = (P2 & 0x1F) | 0x80;
+  21   1          P0 = 0xFF;
+  22   1      }
+  23          
+  24          void Timer0Init()
+  25          {
+  26   1          TMOD = 0x01;
+  27   1      
+  28   1          TH0 = (65536 - 50000) / 256;
+  29   1          TL0 = (65536 - 50000) % 256;
+  30   1      
+  31   1          EA = 1;
+  32   1          ET0 = 1;
+  33   1          TR0 = 1;
+  34   1      }
+  35          
+  36          void main()
+  37          {
+  38   1          InitBoard();
+  39   1          Timer0Init();
+  40   1      
+  41   1          while(1);
+  42   1      }
+  43          
+  44          void Timer0() interrupt 1
+  45          {
+  46   1          TH0 = (65536 - 50000) / 256;
+  47   1          TL0 = (65536 - 50000) % 256;
+  48   1      
+  49   1          count1++;
+  50   1          count8++;
+  51   1      
+  52   1          if(count1 >= 10)
+  53   1          {
+  54   2              count1 = 0;
+C51 COMPILER V9.54   MAIN                                                                  09/11/2026 14:54:53 PAGE 2   
+
+  55   2              led_data ^= 0x01;
+  56   2          }
+  57   1      
+  58   1          if(count8 >= 100)
+  59   1          {
+  60   2              count8 = 0;
+  61   2              led_data ^= 0x80;
+  62   2          }
+  63   1      
+  64   1          P0 = led_data;
+  65   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    120    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

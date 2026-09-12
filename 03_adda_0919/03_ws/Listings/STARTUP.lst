@@ -1,0 +1,65 @@
+A51 MACRO ASSEMBLER  STARTUP                                                              09/12/2026 09:50:10 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02c
+OBJECT MODULE PLACED IN .\Objects\STARTUP.obj
+ASSEMBLER INVOKED BY: D:\Keil5\C51\BIN\A51.EXE STARTUP.A51 SET(SMALL) DEBUG PRINT(.\Listings\STARTUP.lst) OBJECT(.\Objec
+                      ts\STARTUP.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     $nomod51 
+                       2     NAME ?C_STARTUP
+                       3     
+                       4     ?C_C51STARTUP SEGMENT CODE
+                       5     ?STACK SEGMENT IDATA
+                       6     
+----                   7     RSEG ?STACK
+0000                   8     DS 1
+                       9     
+                      10     EXTRN CODE (?C_START)
+                      11     PUBLIC ?C_STARTUP
+                      12     
+----                  13     CSEG AT 0
+0000                  14     ?C_STARTUP:
+0000 020000   F       15         LJMP STARTUP1
+                      16     
+----                  17     RSEG ?C_C51STARTUP
+0000                  18     STARTUP1:
+0000 53A01F           19         ANL 0A0H,#01FH
+0003 758000           20         MOV 080H,#00H
+0006 43A0A0           21         ORL 0A0H,#0A0H
+0009 00               22         NOP
+000A 53A01F           23         ANL 0A0H,#01FH
+000D 43A0C0           24         ORL 0A0H,#0C0H
+0010 00               25         NOP
+0011 53A01F           26         ANL 0A0H,#01FH
+0014 787F             27         MOV R0,#07FH
+0016 E4               28         CLR A
+0017                  29     CLEAR_RAM:
+0017 F6               30         MOV @R0,A
+0018 D8FD             31         DJNZ R0,CLEAR_RAM
+001A 758100   F       32         MOV 081H,#?STACK-1
+001D 020000   F       33         LJMP ?C_START
+                      34     
+                      35     END
+A51 MACRO ASSEMBLER  STARTUP                                                              09/12/2026 09:50:10 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+?C_C51STARTUP. . .  C SEG    0020H       REL=UNIT
+?C_START . . . . .  C ADDR   -----       EXT
+?C_STARTUP . . . .  C ADDR   0000H   A   
+?STACK . . . . . .  I SEG    0001H       REL=UNIT
+CLEAR_RAM. . . . .  C ADDR   0017H   R   SEG=?C_C51STARTUP
+STARTUP1 . . . . .  C ADDR   0000H   R   SEG=?C_C51STARTUP
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

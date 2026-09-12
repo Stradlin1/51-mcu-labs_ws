@@ -1,0 +1,157 @@
+BL51 BANKED LINKER/LOCATER V6.22                                                        09/12/2026  10:07:37  PAGE 1
+
+
+BL51 BANKED LINKER/LOCATER V6.22, INVOKED BY:
+D:\KEIL5\C51\BIN\BL51.EXE .\Objects\STARTUP.obj, .\Objects\main.obj TO .\Objects\01_ws PRINT (.\Listings\01_ws.m51) RAMS
+>> IZE (256)
+
+
+MEMORY MODEL: SMALL
+
+
+INPUT MODULES INCLUDED:
+  .\Objects\STARTUP.obj (?C_STARTUP)
+  .\Objects\main.obj (MAIN)
+
+
+LINK MAP OF MODULE:  .\Objects\01_ws (?C_STARTUP)
+
+
+            TYPE    BASE      LENGTH    RELOCATION   SEGMENT NAME
+            -----------------------------------------------------
+
+            * * * * * * *   D A T A   M E M O R Y   * * * * * * *
+            REG     0000H     0008H     ABSOLUTE     "REG BANK 0"
+            IDATA   0008H     0001H     UNIT         ?STACK
+
+            * * * * * * *   C O D E   M E M O R Y   * * * * * * *
+            CODE    0000H     0003H     ABSOLUTE     
+                    0003H     07FDH                  *** GAP ***
+            CODE    0800H     0034H     UNIT         ?C_C51STARTUP
+            CODE    0834H     002DH     UNIT         ?PR?BOARDINIT?MAIN
+            CODE    0861H     0015H     UNIT         ?PR?MAIN?MAIN
+
+
+
+OVERLAY MAP OF MODULE:   .\Objects\01_ws (?C_STARTUP)
+
+
+SEGMENT
+  +--> CALLED SEGMENT
+---------------------
+?C_C51STARTUP
+  +--> ?PR?MAIN?MAIN
+
+?PR?MAIN?MAIN
+  +--> ?PR?BOARDINIT?MAIN
+
+
+
+SYMBOL TABLE OF MODULE:  .\Objects\01_ws (?C_STARTUP)
+
+  VALUE           TYPE          NAME
+  ----------------------------------
+
+  -------         MODULE        ?C_STARTUP
+  C:0800H         SEGMENT       ?C_C51STARTUP
+  I:0008H         SEGMENT       ?STACK
+  C:0000H         PUBLIC        ?C_STARTUP
+  C:082BH         SYMBOL        CLEAR_RAM
+  C:0800H         SYMBOL        STARTUP1
+  C:0000H         LINE#         15
+BL51 BANKED LINKER/LOCATER V6.22                                                      09/12/2026  10:07:37  PAGE 2
+
+
+  C:0800H         LINE#         19
+  C:0803H         LINE#         20
+  C:0806H         LINE#         21
+  C:0809H         LINE#         22
+  C:080AH         LINE#         23
+  C:080DH         LINE#         25
+  C:0810H         LINE#         26
+  C:0813H         LINE#         27
+  C:0814H         LINE#         28
+  C:0817H         LINE#         30
+  C:081AH         LINE#         31
+  C:081DH         LINE#         32
+  C:081EH         LINE#         33
+  C:0821H         LINE#         35
+  C:0824H         LINE#         36
+  C:0827H         LINE#         37
+  C:0828H         LINE#         39
+  C:082AH         LINE#         40
+  C:082BH         LINE#         42
+  C:082CH         LINE#         43
+  C:082EH         LINE#         44
+  C:0831H         LINE#         45
+  -------         ENDMOD        ?C_STARTUP
+
+  -------         MODULE        MAIN
+  C:0000H         SYMBOL        _ICE_DUMMY_
+  D:0080H         PUBLIC        P0
+  D:0090H         PUBLIC        P1
+  C:0834H         PUBLIC        BoardInit
+  D:00A0H         PUBLIC        P2
+  D:00B0H         PUBLIC        P3
+  B:00A8H.7       PUBLIC        EA
+  B:0080H.0       PUBLIC        LED1
+  B:0080H.1       PUBLIC        LED2
+  B:0080H.2       PUBLIC        LED3
+  B:0080H.3       PUBLIC        LED4
+  D:00A8H         PUBLIC        IE
+  D:00B8H         PUBLIC        IP
+  B:00B0H.0       PUBLIC        KEY2
+  B:00B0H.1       PUBLIC        KEY6
+  C:0861H         PUBLIC        main
+  D:0098H         PUBLIC        SCON
+  D:0088H         PUBLIC        TCON
+  B:00B0H.2       PUBLIC        KEY10
+  B:00B0H.3       PUBLIC        KEY14
+  D:00C8H         PUBLIC        T2CON
+  D:00D0H         PUBLIC        PSW
+  -------         PROC          BOARDINIT
+  C:0834H         LINE#         14
+  C:0834H         LINE#         15
+  C:0834H         LINE#         16
+  C:0836H         LINE#         17
+  C:0839H         LINE#         19
+  C:083CH         LINE#         20
+  C:083FH         LINE#         21
+  C:0842H         LINE#         22
+  C:0843H         LINE#         23
+BL51 BANKED LINKER/LOCATER V6.22                                                      09/12/2026  10:07:37  PAGE 3
+
+
+  C:0846H         LINE#         25
+  C:0848H         LINE#         26
+  C:084BH         LINE#         27
+  C:084CH         LINE#         28
+  C:084FH         LINE#         30
+  C:0852H         LINE#         31
+  C:0855H         LINE#         32
+  C:0856H         LINE#         33
+  C:0859H         LINE#         35
+  C:085CH         LINE#         36
+  C:085FH         LINE#         37
+  C:0860H         LINE#         38
+  -------         ENDPROC       BOARDINIT
+  -------         PROC          MAIN
+  C:0861H         LINE#         40
+  C:0861H         LINE#         41
+  C:0861H         LINE#         42
+  C:0864H         LINE#         44
+  C:0864H         LINE#         45
+  C:0864H         LINE#         46
+  C:0868H         LINE#         47
+  C:086CH         LINE#         48
+  C:0870H         LINE#         49
+  C:0874H         LINE#         50
+  -------         ENDPROC       MAIN
+  -------         ENDMOD        MAIN
+
+******************************************************************************
+* RESTRICTED VERSION WITH 0800H BYTE CODE SIZE LIMIT; USED: 0079H BYTE ( 5%) *
+******************************************************************************
+
+Program Size: data=9.0 xdata=0 code=121
+LINK/LOCATE RUN COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,77 @@
+A51 MACRO ASSEMBLER  STARTUP                                                              09/12/2026 10:07:37 PAGE     1
+
+
+MACRO ASSEMBLER A51 V8.02c
+OBJECT MODULE PLACED IN .\Objects\STARTUP.obj
+ASSEMBLER INVOKED BY: D:\Keil5\C51\BIN\A51.EXE STARTUP.A51 SET(SMALL) DEBUG PRINT(.\Listings\STARTUP.lst) OBJECT(.\Objec
+                      ts\STARTUP.obj) EP
+
+LOC  OBJ            LINE     SOURCE
+
+                       1     $nomod51 
+                       2     NAME ?C_STARTUP
+                       3     
+                       4     ?C_C51STARTUP SEGMENT CODE
+                       5     ?STACK SEGMENT IDATA
+                       6     
+----                   7     RSEG ?STACK
+0000                   8     DS 1
+                       9     
+                      10     EXTRN CODE (?C_START)
+                      11     PUBLIC ?C_STARTUP
+                      12     
+----                  13     CSEG AT 0
+0000                  14     ?C_STARTUP:
+0000 020000   F       15         LJMP STARTUP1
+                      16     
+----                  17     RSEG ?C_C51STARTUP
+0000                  18     STARTUP1:
+0000 75A000           19         MOV 0A0H,#00H
+0003 758000           20         MOV 080H,#00H
+0006 75A0A0           21         MOV 0A0H,#0A0H
+0009 00               22         NOP
+000A 75A000           23         MOV 0A0H,#00H
+                      24     
+000D 758000           25         MOV 080H,#00H
+0010 75A0C0           26         MOV 0A0H,#0C0H
+0013 00               27         NOP
+0014 75A000           28         MOV 0A0H,#00H
+                      29     
+0017 7580FF           30         MOV 080H,#0FFH
+001A 75A0E0           31         MOV 0A0H,#0E0H
+001D 00               32         NOP
+001E 75A000           33         MOV 0A0H,#00H
+                      34     
+0021 7580FF           35         MOV 080H,#0FFH
+0024 75A080           36         MOV 0A0H,#080H
+0027 00               37         NOP
+                      38     
+0028 787F             39         MOV R0,#07FH
+002A E4               40         CLR A
+002B                  41     CLEAR_RAM:
+002B F6               42         MOV @R0,A
+002C D8FD             43         DJNZ R0,CLEAR_RAM
+002E 758100   F       44         MOV 081H,#?STACK-1
+0031 020000   F       45         LJMP ?C_START
+                      46     
+                      47     END
+A51 MACRO ASSEMBLER  STARTUP                                                              09/12/2026 10:07:37 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             T Y P E  V A L U E   ATTRIBUTES
+
+?C_C51STARTUP. . .  C SEG    0034H       REL=UNIT
+?C_START . . . . .  C ADDR   -----       EXT
+?C_STARTUP . . . .  C ADDR   0000H   A   
+?STACK . . . . . .  I SEG    0001H       REL=UNIT
+CLEAR_RAM. . . . .  C ADDR   002BH   R   SEG=?C_C51STARTUP
+STARTUP1 . . . . .  C ADDR   0000H   R   SEG=?C_C51STARTUP
+
+
+REGISTER BANK(S) USED: 0 
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)

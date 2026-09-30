@@ -1,0 +1,203 @@
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 15:49:54 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <absacc.h>
+   3          
+   4          sfr AUXR = 0x8e;
+   5          
+   6          sbit TX = P1^0;
+   7          sbit RX = P1^1;
+   8          
+   9          #define LED_PORT   XBYTE[0x8000]
+  10          #define CTRL_PORT  XBYTE[0xA000]
+  11          #define SMG_WEI    XBYTE[0xC000]
+  12          #define SMG_DUAN   XBYTE[0xE000]
+  13          
+  14          unsigned int distance = 999;
+  15          
+  16          unsigned char code table[] =
+  17          {
+  18              0xc0,0xf9,0xa4,0xb0,
+  19              0x99,0x92,0x82,0xf8,
+  20              0x80,0x90,0x88,0x83,
+  21              0xc6,0xa1,0x86,0x8e
+  22          };
+  23          
+  24          void HardwareInit()
+  25          {
+  26   1          EA = 0;
+  27   1      
+  28   1          TR0 = 0;
+  29   1          TR1 = 0;
+  30   1      
+  31   1          AUXR &= 0x3F;
+  32   1      
+  33   1          TMOD = 0x01;
+  34   1      
+  35   1          TF0 = 0;
+  36   1          TF1 = 0;
+  37   1      
+  38   1          LED_PORT = 0xFF;
+  39   1          CTRL_PORT = 0x00;
+  40   1          SMG_WEI = 0x00;
+  41   1          SMG_DUAN = 0xFF;
+  42   1      
+  43   1          TX = 0;
+  44   1          RX = 1;
+  45   1      }
+  46          
+  47          void Delay12us()
+  48          {
+  49   1          TR0 = 0;
+  50   1          TF0 = 0;
+  51   1      
+  52   1          TH0 = 0xFF;
+  53   1          TL0 = 0xF4;
+  54   1      
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 15:49:54 PAGE 2   
+
+  55   1          TR0 = 1;
+  56   1      
+  57   1          while(TF0 == 0);
+  58   1      
+  59   1          TR0 = 0;
+  60   1          TF0 = 0;
+  61   1      }
+  62          
+  63          void Delay1ms()
+  64          {
+  65   1          TR0 = 0;
+  66   1          TF0 = 0;
+  67   1      
+  68   1          TH0 = 0xFC;
+  69   1          TL0 = 0x18;
+  70   1      
+  71   1          TR0 = 1;
+  72   1      
+  73   1          while(TF0 == 0);
+  74   1      
+  75   1          TR0 = 0;
+  76   1          TF0 = 0;
+  77   1      }
+  78          
+  79          void SendWave()
+  80          {
+  81   1          unsigned char i;
+  82   1      
+  83   1          for(i = 0; i < 8; i++)
+  84   1          {
+  85   2              TX = 1;
+  86   2              Delay12us();
+  87   2      
+  88   2              TX = 0;
+  89   2              Delay12us();
+  90   2          }
+  91   1      }
+  92          
+  93          void MeasureDistance()
+  94          {
+  95   1          unsigned int time;
+  96   1      
+  97   1          TR1 = 0;
+  98   1          TF1 = 0;
+  99   1      
+ 100   1          TH1 = 0x00;
+ 101   1          TL1 = 0x00;
+ 102   1      
+ 103   1          SendWave();
+ 104   1      
+ 105   1          TR1 = 1;
+ 106   1      
+ 107   1          while((RX == 1) && (TF1 == 0));
+ 108   1      
+ 109   1          TR1 = 0;
+ 110   1      
+ 111   1          if(TF1 == 0)
+ 112   1          {
+ 113   2              time = TH1;
+ 114   2              time = (time << 8) | TL1;
+ 115   2      
+ 116   2              distance = ((time / 10) * 17) / 100 + 3;
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 15:49:54 PAGE 3   
+
+ 117   2      
+ 118   2              if(distance > 130)
+ 119   2              {
+ 120   3                  distance = 999;
+ 121   3              }
+ 122   2          }
+ 123   1          else
+ 124   1          {
+ 125   2              TF1 = 0;
+ 126   2              distance = 999;
+ 127   2          }
+ 128   1      }
+ 129          
+ 130          void DisplayBit(unsigned char pos, unsigned char dat)
+ 131          {
+ 132   1          SMG_WEI = 0x00;
+ 133   1          SMG_DUAN = 0xFF;
+ 134   1      
+ 135   1          SMG_WEI = (unsigned char)(0x01 << pos);
+ 136   1          SMG_DUAN = dat;
+ 137   1      
+ 138   1          Delay1ms();
+ 139   1      
+ 140   1          SMG_WEI = 0x00;
+ 141   1          SMG_DUAN = 0xFF;
+ 142   1      }
+ 143          
+ 144          void DisplayDistance()
+ 145          {
+ 146   1          if(distance == 999)
+ 147   1          {
+ 148   2              DisplayBit(0, table[15]);
+ 149   2          }
+ 150   1          else
+ 151   1          {
+ 152   2              DisplayBit(5, table[distance / 100]);
+ 153   2              DisplayBit(6, table[(distance % 100) / 10]);
+ 154   2              DisplayBit(7, table[distance % 10]);
+ 155   2          }
+ 156   1      }
+ 157          
+ 158          void main()
+ 159          {
+ 160   1          unsigned char i;
+ 161   1      
+ 162   1          HardwareInit();
+ 163   1      
+ 164   1          while(1)
+ 165   1          {
+ 166   2              MeasureDistance();
+ 167   2      
+ 168   2              for(i = 0; i < 50; i++)
+ 169   2              {
+ 170   3                  DisplayDistance();
+ 171   3              }
+ 172   2          }
+ 173   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    366    ----
+   CONSTANT SIZE    =     16    ----
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 15:49:54 PAGE 4   
+
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      2    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,312 @@
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:19:43 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <absacc.h>
+   3          #include <intrins.h>
+   4          
+   5          sbit DS1302_RST  = P1^3;
+   6          sbit DS1302_SCLK = P1^7;
+   7          sbit DS1302_IO   = P2^3;
+   8          
+   9          #define LED_PORT   XBYTE[0x8000]
+  10          #define CTRL_PORT  XBYTE[0xA000]
+  11          #define SMG_WEI    XBYTE[0xC000]
+  12          #define SMG_DUAN   XBYTE[0xE000]
+  13          
+  14          #define SHOW_COUNT 400
+  15          
+  16          unsigned char year;
+  17          unsigned char month;
+  18          unsigned char date;
+  19          unsigned char week;
+  20          unsigned char hour;
+  21          unsigned char minute;
+  22          unsigned char second;
+  23          
+  24          unsigned char code table[] =
+  25          {
+  26              0xc0,0xf9,0xa4,0xb0,
+  27              0x99,0x92,0x82,0xf8,
+  28              0x80,0x90
+  29          };
+  30          
+  31          void DelaySMG(unsigned int t)
+  32          {
+  33   1          while(t--);
+  34   1      }
+  35          
+  36          void HardwareInit()
+  37          {
+  38   1          EA = 0;
+  39   1      
+  40   1          LED_PORT = 0xFF;
+  41   1          CTRL_PORT = 0x00;
+  42   1      
+  43   1          SMG_WEI = 0x00;
+  44   1          SMG_DUAN = 0xFF;
+  45   1      
+  46   1          DS1302_RST = 0;
+  47   1          DS1302_SCLK = 0;
+  48   1          DS1302_IO = 0;
+  49   1      }
+  50          
+  51          void DS1302_WriteByte(unsigned char dat)
+  52          {
+  53   1          unsigned char i;
+  54   1      
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:19:43 PAGE 2   
+
+  55   1          for(i = 0; i < 8; i++)
+  56   1          {
+  57   2              DS1302_SCLK = 0;
+  58   2      
+  59   2              DS1302_IO = dat & 0x01;
+  60   2              _nop_();
+  61   2      
+  62   2              DS1302_SCLK = 1;
+  63   2              _nop_();
+  64   2      
+  65   2              DS1302_SCLK = 0;
+  66   2      
+  67   2              dat >>= 1;
+  68   2          }
+  69   1      }
+  70          
+  71          void DS1302_WriteReg(unsigned char addr, unsigned char dat)
+  72          {
+  73   1          DS1302_RST = 0;
+  74   1          DS1302_SCLK = 0;
+  75   1      
+  76   1          DS1302_RST = 1;
+  77   1      
+  78   1          DS1302_WriteByte(addr);
+  79   1          DS1302_WriteByte(dat);
+  80   1      
+  81   1          DS1302_RST = 0;
+  82   1          DS1302_SCLK = 0;
+  83   1      }
+  84          
+  85          unsigned char DS1302_ReadReg(unsigned char addr)
+  86          {
+  87   1          unsigned char i;
+  88   1          unsigned char dat = 0x00;
+  89   1      
+  90   1          DS1302_RST = 0;
+  91   1          DS1302_SCLK = 0;
+  92   1      
+  93   1          DS1302_RST = 1;
+  94   1      
+  95   1          DS1302_WriteByte(addr);
+  96   1      
+  97   1          DS1302_IO = 1;
+  98   1      
+  99   1          for(i = 0; i < 8; i++)
+ 100   1          {
+ 101   2              dat >>= 1;
+ 102   2      
+ 103   2              if(DS1302_IO)
+ 104   2              {
+ 105   3                  dat |= 0x80;
+ 106   3              }
+ 107   2      
+ 108   2              DS1302_SCLK = 1;
+ 109   2              _nop_();
+ 110   2      
+ 111   2              DS1302_SCLK = 0;
+ 112   2              _nop_();
+ 113   2          }
+ 114   1      
+ 115   1          DS1302_RST = 0;
+ 116   1          DS1302_SCLK = 0;
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:19:43 PAGE 3   
+
+ 117   1          DS1302_IO = 0;
+ 118   1      
+ 119   1          return dat;
+ 120   1      }
+ 121          
+ 122          void DS1302_Init()
+ 123          {
+ 124   1          DS1302_WriteReg(0x8E, 0x00);
+ 125   1      
+ 126   1          DS1302_WriteReg(0x80, 0x80);
+ 127   1      
+ 128   1          DS1302_WriteReg(0x82, 0x09);
+ 129   1          DS1302_WriteReg(0x84, 0x16);
+ 130   1      
+ 131   1          DS1302_WriteReg(0x86, 0x30);
+ 132   1          DS1302_WriteReg(0x88, 0x09);
+ 133   1          DS1302_WriteReg(0x8A, 0x03);
+ 134   1          DS1302_WriteReg(0x8C, 0x26);
+ 135   1      
+ 136   1          DS1302_WriteReg(0x80, 0x00);
+ 137   1      
+ 138   1          DS1302_WriteReg(0x8E, 0x80);
+ 139   1      }
+ 140          
+ 141          unsigned char BCDToDec(unsigned char bcd)
+ 142          {
+ 143   1          return (bcd / 16) * 10 + (bcd % 16);
+ 144   1      }
+ 145          
+ 146          void ReadCalendar()
+ 147          {
+ 148   1          second = DS1302_ReadReg(0x81);
+ 149   1          minute = DS1302_ReadReg(0x83);
+ 150   1          hour   = DS1302_ReadReg(0x85);
+ 151   1      
+ 152   1          date   = DS1302_ReadReg(0x87);
+ 153   1          month  = DS1302_ReadReg(0x89);
+ 154   1          week   = DS1302_ReadReg(0x8B);
+ 155   1          year   = DS1302_ReadReg(0x8D);
+ 156   1      
+ 157   1          second &= 0x7F;
+ 158   1          hour &= 0x3F;
+ 159   1      
+ 160   1          second = BCDToDec(second);
+ 161   1          minute = BCDToDec(minute);
+ 162   1          hour   = BCDToDec(hour);
+ 163   1      
+ 164   1          date   = BCDToDec(date);
+ 165   1          month  = BCDToDec(month);
+ 166   1          year   = BCDToDec(year);
+ 167   1      }
+ 168          
+ 169          void DisplayBit(unsigned char pos, unsigned char dat)
+ 170          {
+ 171   1          SMG_WEI = 0x00;
+ 172   1          SMG_DUAN = 0xFF;
+ 173   1      
+ 174   1          SMG_WEI = (unsigned char)(0x01 << pos);
+ 175   1          SMG_DUAN = dat;
+ 176   1      
+ 177   1          DelaySMG(500);
+ 178   1      
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:19:43 PAGE 4   
+
+ 179   1          SMG_WEI = 0x00;
+ 180   1          SMG_DUAN = 0xFF;
+ 181   1      }
+ 182          
+ 183          void DisplayDate()
+ 184          {
+ 185   1          DisplayBit(0, table[year / 10]);
+ 186   1          DisplayBit(1, table[year % 10]);
+ 187   1      
+ 188   1          DisplayBit(2, 0xBF);
+ 189   1      
+ 190   1          DisplayBit(3, table[month / 10]);
+ 191   1          DisplayBit(4, table[month % 10]);
+ 192   1      
+ 193   1          DisplayBit(5, 0xBF);
+ 194   1      
+ 195   1          DisplayBit(6, table[date / 10]);
+ 196   1          DisplayBit(7, table[date % 10]);
+ 197   1      }
+ 198          
+ 199          void DisplayWeek()
+ 200          {
+ 201   1          DisplayBit(0, 0xBF);
+ 202   1          DisplayBit(1, 0xBF);
+ 203   1          DisplayBit(2, 0xBF);
+ 204   1      
+ 205   1          if(week >= 1 && week <= 7)
+ 206   1          {
+ 207   2              DisplayBit(3, table[week]);
+ 208   2          }
+ 209   1          else
+ 210   1          {
+ 211   2              DisplayBit(3, 0xFF);
+ 212   2          }
+ 213   1      
+ 214   1          DisplayBit(4, 0xBF);
+ 215   1          DisplayBit(5, 0xBF);
+ 216   1          DisplayBit(6, 0xBF);
+ 217   1          DisplayBit(7, 0xBF);
+ 218   1      }
+ 219          
+ 220          void DisplayTime()
+ 221          {
+ 222   1          DisplayBit(0, table[hour / 10]);
+ 223   1          DisplayBit(1, table[hour % 10]);
+ 224   1      
+ 225   1          DisplayBit(2, 0xBF);
+ 226   1      
+ 227   1          DisplayBit(3, table[minute / 10]);
+ 228   1          DisplayBit(4, table[minute % 10]);
+ 229   1      
+ 230   1          DisplayBit(5, 0xBF);
+ 231   1      
+ 232   1          DisplayBit(6, table[second / 10]);
+ 233   1          DisplayBit(7, table[second % 10]);
+ 234   1      }
+ 235          
+ 236          void ShowDate()
+ 237          {
+ 238   1          unsigned int i;
+ 239   1      
+ 240   1          for(i = 0; i < SHOW_COUNT; i++)
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:19:43 PAGE 5   
+
+ 241   1          {
+ 242   2              ReadCalendar();
+ 243   2              DisplayDate();
+ 244   2          }
+ 245   1      }
+ 246          
+ 247          void ShowWeek()
+ 248          {
+ 249   1          unsigned int i;
+ 250   1      
+ 251   1          for(i = 0; i < SHOW_COUNT; i++)
+ 252   1          {
+ 253   2              ReadCalendar();
+ 254   2              DisplayWeek();
+ 255   2          }
+ 256   1      }
+ 257          
+ 258          void ShowTime()
+ 259          {
+ 260   1          unsigned int i;
+ 261   1      
+ 262   1          for(i = 0; i < SHOW_COUNT; i++)
+ 263   1          {
+ 264   2              ReadCalendar();
+ 265   2              DisplayTime();
+ 266   2          }
+ 267   1      }
+ 268          
+ 269          void main()
+ 270          {
+ 271   1          HardwareInit();
+ 272   1          DS1302_Init();
+ 273   1      
+ 274   1          while(1)
+ 275   1          {
+ 276   2              ShowDate();
+ 277   2              ShowWeek();
+ 278   2              ShowTime();
+ 279   2          }
+ 280   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    722    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      7    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

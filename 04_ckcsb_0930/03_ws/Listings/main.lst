@@ -1,0 +1,217 @@
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:07:58 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          #include <absacc.h>
+   3          #include <intrins.h>
+   4          
+   5          sbit DS1302_RST  = P1^3;
+   6          sbit DS1302_SCLK = P1^7;
+   7          sbit DS1302_IO   = P2^3;
+   8          
+   9          #define LED_PORT   XBYTE[0x8000]
+  10          #define CTRL_PORT  XBYTE[0xA000]
+  11          #define SMG_WEI    XBYTE[0xC000]
+  12          #define SMG_DUAN   XBYTE[0xE000]
+  13          
+  14          unsigned char hour;
+  15          unsigned char minute;
+  16          unsigned char second;
+  17          
+  18          unsigned char code table[] =
+  19          {
+  20              0xc0,0xf9,0xa4,0xb0,
+  21              0x99,0x92,0x82,0xf8,
+  22              0x80,0x90
+  23          };
+  24          
+  25          void DelaySMG(unsigned int t)
+  26          {
+  27   1          while(t--);
+  28   1      }
+  29          
+  30          void HardwareInit()
+  31          {
+  32   1          EA = 0;
+  33   1      
+  34   1          LED_PORT = 0xFF;
+  35   1          CTRL_PORT = 0x00;
+  36   1      
+  37   1          SMG_WEI = 0x00;
+  38   1          SMG_DUAN = 0xFF;
+  39   1      
+  40   1          DS1302_RST = 0;
+  41   1          DS1302_SCLK = 0;
+  42   1          DS1302_IO = 0;
+  43   1      }
+  44          
+  45          void DS1302_WriteByte(unsigned char dat)
+  46          {
+  47   1          unsigned char i;
+  48   1      
+  49   1          for(i = 0; i < 8; i++)
+  50   1          {
+  51   2              DS1302_SCLK = 0;
+  52   2      
+  53   2              DS1302_IO = dat & 0x01;
+  54   2              _nop_();
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:07:58 PAGE 2   
+
+  55   2      
+  56   2              DS1302_SCLK = 1;
+  57   2              _nop_();
+  58   2      
+  59   2              DS1302_SCLK = 0;
+  60   2      
+  61   2              dat >>= 1;
+  62   2          }
+  63   1      }
+  64          
+  65          void DS1302_WriteReg(unsigned char addr, unsigned char dat)
+  66          {
+  67   1          DS1302_RST = 0;
+  68   1          DS1302_SCLK = 0;
+  69   1      
+  70   1          DS1302_RST = 1;
+  71   1      
+  72   1          DS1302_WriteByte(addr);
+  73   1          DS1302_WriteByte(dat);
+  74   1      
+  75   1          DS1302_RST = 0;
+  76   1          DS1302_SCLK = 0;
+  77   1      }
+  78          
+  79          unsigned char DS1302_ReadReg(unsigned char addr)
+  80          {
+  81   1          unsigned char i;
+  82   1          unsigned char dat = 0x00;
+  83   1      
+  84   1          DS1302_RST = 0;
+  85   1          DS1302_SCLK = 0;
+  86   1      
+  87   1          DS1302_RST = 1;
+  88   1      
+  89   1          DS1302_WriteByte(addr);
+  90   1      
+  91   1          DS1302_IO = 1;
+  92   1      
+  93   1          for(i = 0; i < 8; i++)
+  94   1          {
+  95   2              dat >>= 1;
+  96   2      
+  97   2              if(DS1302_IO)
+  98   2              {
+  99   3                  dat |= 0x80;
+ 100   3              }
+ 101   2      
+ 102   2              DS1302_SCLK = 1;
+ 103   2              _nop_();
+ 104   2      
+ 105   2              DS1302_SCLK = 0;
+ 106   2              _nop_();
+ 107   2          }
+ 108   1      
+ 109   1          DS1302_RST = 0;
+ 110   1          DS1302_SCLK = 0;
+ 111   1          DS1302_IO = 0;
+ 112   1      
+ 113   1          return dat;
+ 114   1      }
+ 115          
+ 116          void DS1302_Init()
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:07:58 PAGE 3   
+
+ 117          {
+ 118   1          DS1302_WriteReg(0x8E, 0x00);
+ 119   1      
+ 120   1          DS1302_WriteReg(0x80, 0x24);
+ 121   1          DS1302_WriteReg(0x82, 0x59);
+ 122   1          DS1302_WriteReg(0x84, 0x23);
+ 123   1      
+ 124   1          DS1302_WriteReg(0x8E, 0x80);
+ 125   1      }
+ 126          
+ 127          unsigned char BCDToDec(unsigned char bcd)
+ 128          {
+ 129   1          return (bcd / 16) * 10 + (bcd % 16);
+ 130   1      }
+ 131          
+ 132          void ReadTime()
+ 133          {
+ 134   1          second = DS1302_ReadReg(0x81);
+ 135   1          minute = DS1302_ReadReg(0x83);
+ 136   1          hour   = DS1302_ReadReg(0x85);
+ 137   1      
+ 138   1          second &= 0x7F;
+ 139   1          hour &= 0x3F;
+ 140   1      
+ 141   1          second = BCDToDec(second);
+ 142   1          minute = BCDToDec(minute);
+ 143   1          hour   = BCDToDec(hour);
+ 144   1      }
+ 145          
+ 146          void DisplayBit(unsigned char pos, unsigned char dat)
+ 147          {
+ 148   1          SMG_WEI = 0x00;
+ 149   1          SMG_DUAN = 0xFF;
+ 150   1      
+ 151   1          SMG_WEI = (unsigned char)(0x01 << pos);
+ 152   1          SMG_DUAN = dat;
+ 153   1      
+ 154   1          DelaySMG(500);
+ 155   1      
+ 156   1          SMG_WEI = 0x00;
+ 157   1          SMG_DUAN = 0xFF;
+ 158   1      }
+ 159          
+ 160          void DisplayTime()
+ 161          {
+ 162   1          DisplayBit(0, table[hour / 10]);
+ 163   1          DisplayBit(1, table[hour % 10]);
+ 164   1      
+ 165   1          DisplayBit(2, 0xBF);
+ 166   1      
+ 167   1          DisplayBit(3, table[minute / 10]);
+ 168   1          DisplayBit(4, table[minute % 10]);
+ 169   1      
+ 170   1          DisplayBit(5, 0xBF);
+ 171   1      
+ 172   1          DisplayBit(6, table[second / 10]);
+ 173   1          DisplayBit(7, table[second % 10]);
+ 174   1      }
+ 175          
+ 176          void main()
+ 177          {
+ 178   1          HardwareInit();
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 16:07:58 PAGE 4   
+
+ 179   1      
+ 180   1          DS1302_Init();
+ 181   1      
+ 182   1          while(1)
+ 183   1          {
+ 184   2              ReadTime();
+ 185   2              DisplayTime();
+ 186   2          }
+ 187   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    389    ----
+   CONSTANT SIZE    =     10    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      3    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

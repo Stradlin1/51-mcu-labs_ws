@@ -1,0 +1,108 @@
+C51 COMPILER V9.54   MAIN                                                                  09/19/2026 08:58:52 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Objects\main.obj
+COMPILER INVOKED BY: D:\Keil5\C51\BIN\C51.EXE main.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\main.l
+                    -st) TABS(2) OBJECT(.\Objects\main.obj)
+
+line level    source
+
+   1          #include <reg52.h>
+   2          
+   3          sbit led1=P0^0;
+   4          sbit led2=P0^1;
+   5          sbit led3=P0^2;
+   6          sbit led4=P0^3;
+   7          
+   8          sbit key2=P3^0;
+   9          sbit key6=P3^1;
+  10          sbit key10=P3^2;
+  11          sbit key14=P3^3;
+  12          
+  13          sbit HC138_A=P2^5;
+  14          sbit HC138_B=P2^6;
+  15          sbit HC138_C=P2^7;
+  16          
+  17          void delay(unsigned int t)
+  18          {
+  19   1          while(t--);
+  20   1          while(t--);
+  21   1      }
+  22          
+  23          void keyscan()
+  24          {
+  25   1          if(key2==0)
+  26   1          {
+  27   2              delay(600);
+  28   2              if(key2==0)
+  29   2              {
+  30   3                  led1=0;
+  31   3                  while(key2==0);
+  32   3                  led1=1;
+  33   3              }
+  34   2          }
+  35   1      
+  36   1          if(key6==0)
+  37   1          {
+  38   2              delay(600);
+  39   2              if(key6==0)
+  40   2              {
+  41   3                  led2=0;
+  42   3                  while(key6==0);
+  43   3                  led2=1;
+  44   3              }
+  45   2          }
+  46   1      
+  47   1          if(key10==0)
+  48   1          {
+  49   2              delay(600);
+  50   2              if(key10==0)
+  51   2              {
+  52   3                  led3=0;
+  53   3                  while(key10==0);
+  54   3                  led3=1;
+C51 COMPILER V9.54   MAIN                                                                  09/19/2026 08:58:52 PAGE 2   
+
+  55   3              }
+  56   2          }
+  57   1      
+  58   1          if(key14==0)
+  59   1          {
+  60   2              delay(600);
+  61   2              if(key14==0)
+  62   2              {
+  63   3                  led4=0;
+  64   3                  while(key14==0);
+  65   3                  led4=1;
+  66   3              }
+  67   2          }
+  68   1      }
+  69          
+  70          void main()
+  71          {
+  72   1          HC138_C=1;
+  73   1          HC138_B=0;
+  74   1          HC138_A=0;
+  75   1      
+  76   1          P0=0xFF;
+  77   1      
+  78   1          while(1)
+  79   1          {
+  80   2              keyscan();
+  81   2          }
+  82   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    104    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

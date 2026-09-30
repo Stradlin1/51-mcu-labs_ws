@@ -1,78 +1,26 @@
 #include <reg52.h>
 #include <intrins.h>
-
-#define FOSC 12000000UL
-#define TIMER1_RELOAD (65536UL - FOSC / 12UL / 1000UL)
+#include <stdio.h>
 
 sfr AUXR = 0x8E;
 
-#define ADC_CONTROL 0x03
+sbit SDA = P2^1;
+sbit SCL = P2^0;
 
-sbit I2C_SCL = P2^0;
-sbit I2C_SDA = P2^1;
+#define LDR 0x41
+#define VA  0x43
+#define DELAY_TIME 5
 
-unsigned char code table[16] = {
-    0xC0, 0xF9, 0xA4, 0xB0,
-    0x99, 0x92, 0x82, 0xF8,
-    0x80, 0x90, 0x88, 0x83,
-    0xC6, 0xA1, 0x86, 0x8E
-};
-
-volatile unsigned char display_buf[8] = {
-    0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF
-};
-volatile bit adc_due = 1;
-
-void LatchWrite(unsigned char select, unsigned char value)
-{
-    P2 &= 0x1F;
-    P0 = value;
-    P2 |= select;
-    _nop_();
-    P2 &= 0x1F;
-    P0 = 0x00;
-}
-
-void BoardInit(void)
-{
-    EA = 0;
-    P2 &= 0x1F;
-    P0 = 0x00;
-    P2 |= 0xA0;
-    _nop_();
-    P2 &= 0x1F;
-    P2 |= 0xC0;
-    _nop_();
-    P2 &= 0x1F;
-    P0 = 0xFF;
-    P2 |= 0xE0;
-    _nop_();
-    P2 &= 0x1F;
-    P2 |= 0x80;
-    _nop_();
-    P2 &= 0x1F;
-    P0 = 0x00;
-    P3 = 0xFF;
-}
-
-void Timer1Init(void)
-{
-    TR1 = 0;
-    AUXR &= 0xBF;
-    TMOD &= 0x0F;
-    TL1 = (unsigned char)TIMER1_RELOAD;
-    TH1 = (unsigned char)(TIMER1_RELOAD >> 8);
-    TF1 = 0;
-    ET1 = 1;
-    TR1 = 1;
-    EA = 1;
-}
+unsigned char pos = 0;
+char string[10];
+unsigned char buf[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+unsigned char delay_seg = 0;
+unsigned char ADC_value = 0;
 
 void I2CDelay(void)
 {
     unsigned char i;
-
-    for(i = 0; i < 40; i++)
+    for(i = 0; i < DELAY_TIME; i++)
     {
         _nop_();
     }
@@ -80,180 +28,251 @@ void I2CDelay(void)
 
 void I2CStart(void)
 {
-    I2C_SDA = 1;
+    SDA = 1;
+    SCL = 1;
     I2CDelay();
-    I2C_SCL = 1;
+    SDA = 0;
     I2CDelay();
-    I2C_SDA = 0;
-    I2CDelay();
-    I2C_SCL = 0;
+    SCL = 0;
     I2CDelay();
 }
 
 void I2CStop(void)
 {
-    I2C_SCL = 0;
-    I2C_SDA = 0;
+    SDA = 0;
+    SCL = 0;
     I2CDelay();
-    I2C_SCL = 1;
+    SCL = 1;
     I2CDelay();
-    I2C_SDA = 1;
+    SDA = 1;
     I2CDelay();
 }
 
-unsigned char I2CSendByte(unsigned char value)
+void I2CSendByte(unsigned char dat)
 {
     unsigned char i;
-    unsigned char ack;
 
     for(i = 0; i < 8; i++)
     {
-        I2C_SCL = 0;
-        I2C_SDA = (value & 0x80) ? 1 : 0;
+        SDA = (dat & 0x80) ? 1 : 0;
         I2CDelay();
-        I2C_SCL = 1;
+        SCL = 1;
         I2CDelay();
-        I2C_SCL = 0;
-        value <<= 1;
+        SCL = 0;
+        I2CDelay();
+        dat <<= 1;
     }
-    I2C_SDA = 1;
+
+    SDA = 1;
+}
+
+bit I2CWaitAck(void)
+{
+    bit ack;
+
+    SDA = 1;
     I2CDelay();
-    I2C_SCL = 1;
+    SCL = 1;
     I2CDelay();
-    ack = I2C_SDA ? 0 : 1;
-    I2C_SCL = 0;
+    ack = SDA;
+    SCL = 0;
     I2CDelay();
+
     return ack;
 }
 
 unsigned char I2CReceiveByte(void)
 {
     unsigned char i;
-    unsigned char value;
+    unsigned char dat = 0;
 
-    value = 0;
-    I2C_SDA = 1;
+    SDA = 1;
+
     for(i = 0; i < 8; i++)
     {
-        I2C_SCL = 0;
+        SCL = 1;
         I2CDelay();
-        I2C_SCL = 1;
-        I2CDelay();
-        value <<= 1;
-        if(I2C_SDA)
+        dat <<= 1;
+
+        if(SDA)
         {
-            value |= 1;
+            dat |= 0x01;
         }
-        I2C_SCL = 0;
+
+        SCL = 0;
+        I2CDelay();
     }
-    return value;
+
+    return dat;
 }
 
-void I2CSendAck(unsigned char nack)
+void I2CSendAck(bit ack)
 {
-    I2C_SCL = 0;
-    I2C_SDA = nack ? 1 : 0;
+    SDA = ack;
     I2CDelay();
-    I2C_SCL = 1;
+    SCL = 1;
     I2CDelay();
-    I2C_SCL = 0;
+    SCL = 0;
     I2CDelay();
-    I2C_SDA = 1;
+    SDA = 1;
 }
 
-unsigned char PCF8591Read(unsigned char *result)
+unsigned char PCF8591_ADC(unsigned char addr)
 {
+    unsigned char temp;
+
     I2CStart();
-    if(!I2CSendByte(0x90))
-    {
-        I2CStop();
-        return 0;
-    }
-    if(!I2CSendByte(ADC_CONTROL))
-    {
-        I2CStop();
-        return 0;
-    }
+    I2CSendByte(0x90);
+    I2CWaitAck();
+
+    I2CSendByte(addr);
+    I2CWaitAck();
+
     I2CStart();
-    if(!I2CSendByte(0x91))
-    {
-        I2CStop();
-        return 0;
-    }
-    I2CReceiveByte();
-    I2CSendAck(0);
-    *result = I2CReceiveByte();
+    I2CSendByte(0x91);
+    I2CWaitAck();
+
+    temp = I2CReceiveByte();
     I2CSendAck(1);
     I2CStop();
-    return 1;
+
+    return temp;
 }
 
-void DisplayADC(unsigned char value, unsigned char valid)
+void InitSystem(void)
 {
-    unsigned char hundreds;
-    unsigned char tens;
-    unsigned char units;
+    P0 = 0xFF;
+    P2 = (P2 & 0x1F) | 0x80;
+    P2 &= 0x1F;
 
-    hundreds = 0xBF;
-    tens = 0xBF;
-    units = 0xBF;
-    if(valid)
+    P0 = 0x00;
+    P2 = (P2 & 0x1F) | 0xA0;
+    P2 &= 0x1F;
+
+    P0 = 0x00;
+    P2 = (P2 & 0x1F) | 0xC0;
+    P2 &= 0x1F;
+
+    P0 = 0xFF;
+    P2 = (P2 & 0x1F) | 0xE0;
+    P2 &= 0x1F;
+}
+
+void Timer1Init(void)
+{
+    AUXR &= 0xBF;
+    TMOD &= 0x0F;
+    TL1 = 0x18;
+    TH1 = 0xFC;
+    TF1 = 0;
+    TR1 = 1;
+    ET1 = 1;
+}
+
+void Display_Seg(unsigned char p, unsigned char *b)
+{
+    P0 = 0xFF;
+    P2 = (P2 & 0x1F) | 0xE0;
+    P2 &= 0x1F;
+
+    P0 = 0x01 << p;
+    P2 = (P2 & 0x1F) | 0xC0;
+    P2 &= 0x1F;
+
+    P0 = b[p];
+    P2 = (P2 & 0x1F) | 0xE0;
+    P2 &= 0x1F;
+}
+
+void Tran_string(char *str, unsigned char *b)
+{
+    unsigned char i = 0;
+    unsigned char j = 0;
+    unsigned char temp;
+
+    for(i = 0; i < 8; i++, j++)
     {
-        hundreds = table[value / 100];
-        tens = table[value / 10 % 10];
-        units = table[value % 10];
+        switch(str[j])
+        {
+            case '0': temp = 0xC0; break;
+            case '1': temp = 0xF9; break;
+            case '2': temp = 0xA4; break;
+            case '3': temp = 0xB0; break;
+            case '4': temp = 0x99; break;
+            case '5': temp = 0x92; break;
+            case '6': temp = 0x82; break;
+            case '7': temp = 0xF8; break;
+            case '8': temp = 0x80; break;
+            case '9': temp = 0x90; break;
+            case 'A': temp = 0x88; break;
+            case 'B': temp = 0x83; break;
+            case 'C': temp = 0xC6; break;
+            case 'D': temp = 0xA1; break;
+            case 'E': temp = 0x86; break;
+            case 'F': temp = 0x8E; break;
+            case '.': temp = 0x7F; break;
+            case '-': temp = 0xBF; break;
+            default: temp = 0xFF; break;
+        }
+
+        if(str[j + 1] == '.')
+        {
+            temp &= 0x7F;
+            j++;
+        }
+
+        b[i] = temp;
     }
-    EA = 0;
-    display_buf[5] = hundreds;
-    display_buf[6] = tens;
-    display_buf[7] = units;
-    EA = 1;
 }
 
-void DisplayScan(void)
+void UpdateADCDisplay(void)
 {
-    static unsigned char pos = 0;
+    ADC_value = PCF8591_ADC(VA);
+    sprintf(string, "-----%03u", (unsigned int)ADC_value);
+    Tran_string(string, buf);
+}
 
-    LatchWrite(0xC0, 0x00);
-    LatchWrite(0xE0, display_buf[pos]);
-    LatchWrite(0xC0, (unsigned char)(1 << pos));
-    pos++;
-    if(pos == 8)
+void Seg_Process(void)
+{
+    if(delay_seg)
+    {
+        return;
+    }
+
+    delay_seg = 1;
+    UpdateADCDisplay();
+}
+
+void ServiceTimer1(void) interrupt 3
+{
+    if(++delay_seg == 200)
+    {
+        delay_seg = 0;
+    }
+
+    if(++pos == 8)
     {
         pos = 0;
     }
+
+    Display_Seg(pos, buf);
 }
 
 void main(void)
 {
-    unsigned char value;
-    unsigned char valid;
+    InitSystem();
 
-    BoardInit();
-    I2C_SCL = 1;
-    I2C_SDA = 1;
-    value = 0;
+    SDA = 1;
+    SCL = 1;
+
+    UpdateADCDisplay();
+    delay_seg = 1;
+
     Timer1Init();
+    EA = 1;
+
     while(1)
     {
-        if(adc_due)
-        {
-            adc_due = 0;
-            valid = PCF8591Read(&value);
-            DisplayADC(value, valid);
-        }
-    }
-}
-
-void Timer1_ISR(void) interrupt 3
-{
-    static unsigned char elapsed = 0;
-
-    DisplayScan();
-    elapsed++;
-    if(elapsed >= 200)
-    {
-        elapsed = 0;
-        adc_due = 1;
+        Seg_Process();
     }
 }

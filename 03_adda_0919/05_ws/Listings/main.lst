@@ -1,4 +1,4 @@
-C51 COMPILER V9.54   MAIN                                                                  09/12/2026 09:50:35 PAGE 1   
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 14:29:18 PAGE 1   
 
 
 C51 COMPILER V9.54, COMPILATION OF MODULE MAIN
@@ -10,281 +10,300 @@ line level    source
 
    1          #include <reg52.h>
    2          #include <intrins.h>
-   3          
-   4          #define FOSC 12000000UL
-   5          #define TIMER1_RELOAD (65536UL - FOSC / 12UL / 1000UL)
+   3          #include <stdio.h>
+   4          
+   5          sfr AUXR = 0x8E;
    6          
-   7          sfr AUXR = 0x8E;
-   8          
-   9          #define ADC_CONTROL 0x03
-  10          
-  11          sbit I2C_SCL = P2^0;
-  12          sbit I2C_SDA = P2^1;
+   7          sbit SDA = P2^1;
+   8          sbit SCL = P2^0;
+   9          
+  10          #define LDR 0x41
+  11          #define VA  0x43
+  12          #define DELAY_TIME 5
   13          
-  14          unsigned char code table[16] = {
-  15              0xC0, 0xF9, 0xA4, 0xB0,
-  16              0x99, 0x92, 0x82, 0xF8,
-  17              0x80, 0x90, 0x88, 0x83,
-  18              0xC6, 0xA1, 0x86, 0x8E
-  19          };
-  20          
-  21          volatile unsigned char display_buf[8] = {
-  22              0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF, 0xBF
-  23          };
-  24          volatile bit adc_due = 1;
-  25          
-  26          void LatchWrite(unsigned char select, unsigned char value)
-  27          {
-  28   1          P2 &= 0x1F;
-  29   1          P0 = value;
-  30   1          P2 |= select;
-  31   1          _nop_();
-  32   1          P2 &= 0x1F;
-  33   1          P0 = 0x00;
-  34   1      }
-  35          
-  36          void BoardInit(void)
-  37          {
-  38   1          EA = 0;
-  39   1          P2 &= 0x1F;
-  40   1          P0 = 0x00;
-  41   1          P2 |= 0xA0;
-  42   1          _nop_();
-  43   1          P2 &= 0x1F;
-  44   1          P2 |= 0xC0;
-  45   1          _nop_();
-  46   1          P2 &= 0x1F;
-  47   1          P0 = 0xFF;
-  48   1          P2 |= 0xE0;
-  49   1          _nop_();
-  50   1          P2 &= 0x1F;
-  51   1          P2 |= 0x80;
-  52   1          _nop_();
-  53   1          P2 &= 0x1F;
-  54   1          P0 = 0x00;
-C51 COMPILER V9.54   MAIN                                                                  09/12/2026 09:50:35 PAGE 2   
+  14          unsigned char pos = 0;
+  15          char string[10];
+  16          unsigned char buf[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+  17          unsigned char delay_seg = 0;
+  18          unsigned char ADC_value = 0;
+  19          
+  20          void I2CDelay(void)
+  21          {
+  22   1          unsigned char i;
+  23   1          for(i = 0; i < DELAY_TIME; i++)
+  24   1          {
+  25   2              _nop_();
+  26   2          }
+  27   1      }
+  28          
+  29          void I2CStart(void)
+  30          {
+  31   1          SDA = 1;
+  32   1          SCL = 1;
+  33   1          I2CDelay();
+  34   1          SDA = 0;
+  35   1          I2CDelay();
+  36   1          SCL = 0;
+  37   1          I2CDelay();
+  38   1      }
+  39          
+  40          void I2CStop(void)
+  41          {
+  42   1          SDA = 0;
+  43   1          SCL = 0;
+  44   1          I2CDelay();
+  45   1          SCL = 1;
+  46   1          I2CDelay();
+  47   1          SDA = 1;
+  48   1          I2CDelay();
+  49   1      }
+  50          
+  51          void I2CSendByte(unsigned char dat)
+  52          {
+  53   1          unsigned char i;
+  54   1      
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 14:29:18 PAGE 2   
 
-  55   1          P3 = 0xFF;
-  56   1      }
-  57          
-  58          void Timer1Init(void)
-  59          {
-  60   1          TR1 = 0;
-  61   1          AUXR &= 0xBF;
-  62   1          TMOD &= 0x0F;
-  63   1          TL1 = (unsigned char)TIMER1_RELOAD;
-  64   1          TH1 = (unsigned char)(TIMER1_RELOAD >> 8);
-  65   1          TF1 = 0;
-  66   1          ET1 = 1;
-  67   1          TR1 = 1;
-  68   1          EA = 1;
-  69   1      }
-  70          
-  71          void I2CDelay(void)
-  72          {
-  73   1          unsigned char i;
-  74   1      
-  75   1          for(i = 0; i < 40; i++)
-  76   1          {
-  77   2              _nop_();
-  78   2          }
-  79   1      }
-  80          
-  81          void I2CStart(void)
-  82          {
-  83   1          I2C_SDA = 1;
-  84   1          I2CDelay();
-  85   1          I2C_SCL = 1;
-  86   1          I2CDelay();
-  87   1          I2C_SDA = 0;
-  88   1          I2CDelay();
-  89   1          I2C_SCL = 0;
-  90   1          I2CDelay();
-  91   1      }
-  92          
-  93          void I2CStop(void)
-  94          {
-  95   1          I2C_SCL = 0;
-  96   1          I2C_SDA = 0;
-  97   1          I2CDelay();
-  98   1          I2C_SCL = 1;
-  99   1          I2CDelay();
- 100   1          I2C_SDA = 1;
- 101   1          I2CDelay();
- 102   1      }
- 103          
- 104          unsigned char I2CSendByte(unsigned char value)
- 105          {
- 106   1          unsigned char i;
- 107   1          unsigned char ack;
- 108   1      
- 109   1          for(i = 0; i < 8; i++)
- 110   1          {
- 111   2              I2C_SCL = 0;
- 112   2              I2C_SDA = (value & 0x80) ? 1 : 0;
- 113   2              I2CDelay();
- 114   2              I2C_SCL = 1;
- 115   2              I2CDelay();
- 116   2              I2C_SCL = 0;
-C51 COMPILER V9.54   MAIN                                                                  09/12/2026 09:50:35 PAGE 3   
+  55   1          for(i = 0; i < 8; i++)
+  56   1          {
+  57   2              SDA = (dat & 0x80) ? 1 : 0;
+  58   2              I2CDelay();
+  59   2              SCL = 1;
+  60   2              I2CDelay();
+  61   2              SCL = 0;
+  62   2              I2CDelay();
+  63   2              dat <<= 1;
+  64   2          }
+  65   1      
+  66   1          SDA = 1;
+  67   1      }
+  68          
+  69          bit I2CWaitAck(void)
+  70          {
+  71   1          bit ack;
+  72   1      
+  73   1          SDA = 1;
+  74   1          I2CDelay();
+  75   1          SCL = 1;
+  76   1          I2CDelay();
+  77   1          ack = SDA;
+  78   1          SCL = 0;
+  79   1          I2CDelay();
+  80   1      
+  81   1          return ack;
+  82   1      }
+  83          
+  84          unsigned char I2CReceiveByte(void)
+  85          {
+  86   1          unsigned char i;
+  87   1          unsigned char dat = 0;
+  88   1      
+  89   1          SDA = 1;
+  90   1      
+  91   1          for(i = 0; i < 8; i++)
+  92   1          {
+  93   2              SCL = 1;
+  94   2              I2CDelay();
+  95   2              dat <<= 1;
+  96   2      
+  97   2              if(SDA)
+  98   2              {
+  99   3                  dat |= 0x01;
+ 100   3              }
+ 101   2      
+ 102   2              SCL = 0;
+ 103   2              I2CDelay();
+ 104   2          }
+ 105   1      
+ 106   1          return dat;
+ 107   1      }
+ 108          
+ 109          void I2CSendAck(bit ack)
+ 110          {
+ 111   1          SDA = ack;
+ 112   1          I2CDelay();
+ 113   1          SCL = 1;
+ 114   1          I2CDelay();
+ 115   1          SCL = 0;
+ 116   1          I2CDelay();
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 14:29:18 PAGE 3   
 
- 117   2              value <<= 1;
- 118   2          }
- 119   1          I2C_SDA = 1;
- 120   1          I2CDelay();
- 121   1          I2C_SCL = 1;
- 122   1          I2CDelay();
- 123   1          ack = I2C_SDA ? 0 : 1;
- 124   1          I2C_SCL = 0;
- 125   1          I2CDelay();
- 126   1          return ack;
- 127   1      }
- 128          
- 129          unsigned char I2CReceiveByte(void)
- 130          {
- 131   1          unsigned char i;
- 132   1          unsigned char value;
- 133   1      
- 134   1          value = 0;
- 135   1          I2C_SDA = 1;
- 136   1          for(i = 0; i < 8; i++)
- 137   1          {
- 138   2              I2C_SCL = 0;
- 139   2              I2CDelay();
- 140   2              I2C_SCL = 1;
- 141   2              I2CDelay();
- 142   2              value <<= 1;
- 143   2              if(I2C_SDA)
- 144   2              {
- 145   3                  value |= 1;
- 146   3              }
- 147   2              I2C_SCL = 0;
- 148   2          }
- 149   1          return value;
- 150   1      }
- 151          
- 152          void I2CSendAck(unsigned char nack)
- 153          {
- 154   1          I2C_SCL = 0;
- 155   1          I2C_SDA = nack ? 1 : 0;
- 156   1          I2CDelay();
- 157   1          I2C_SCL = 1;
- 158   1          I2CDelay();
- 159   1          I2C_SCL = 0;
- 160   1          I2CDelay();
- 161   1          I2C_SDA = 1;
- 162   1      }
- 163          
- 164          unsigned char PCF8591Read(unsigned char *result)
- 165          {
- 166   1          I2CStart();
- 167   1          if(!I2CSendByte(0x90))
- 168   1          {
- 169   2              I2CStop();
- 170   2              return 0;
- 171   2          }
- 172   1          if(!I2CSendByte(ADC_CONTROL))
- 173   1          {
- 174   2              I2CStop();
- 175   2              return 0;
- 176   2          }
- 177   1          I2CStart();
- 178   1          if(!I2CSendByte(0x91))
-C51 COMPILER V9.54   MAIN                                                                  09/12/2026 09:50:35 PAGE 4   
+ 117   1          SDA = 1;
+ 118   1      }
+ 119          
+ 120          unsigned char PCF8591_ADC(unsigned char addr)
+ 121          {
+ 122   1          unsigned char temp;
+ 123   1      
+ 124   1          I2CStart();
+ 125   1          I2CSendByte(0x90);
+ 126   1          I2CWaitAck();
+ 127   1      
+ 128   1          I2CSendByte(addr);
+ 129   1          I2CWaitAck();
+ 130   1      
+ 131   1          I2CStart();
+ 132   1          I2CSendByte(0x91);
+ 133   1          I2CWaitAck();
+ 134   1      
+ 135   1          temp = I2CReceiveByte();
+ 136   1          I2CSendAck(1);
+ 137   1          I2CStop();
+ 138   1      
+ 139   1          return temp;
+ 140   1      }
+ 141          
+ 142          void InitSystem(void)
+ 143          {
+ 144   1          P0 = 0xFF;
+ 145   1          P2 = (P2 & 0x1F) | 0x80;
+ 146   1          P2 &= 0x1F;
+ 147   1      
+ 148   1          P0 = 0x00;
+ 149   1          P2 = (P2 & 0x1F) | 0xA0;
+ 150   1          P2 &= 0x1F;
+ 151   1      
+ 152   1          P0 = 0x00;
+ 153   1          P2 = (P2 & 0x1F) | 0xC0;
+ 154   1          P2 &= 0x1F;
+ 155   1      
+ 156   1          P0 = 0xFF;
+ 157   1          P2 = (P2 & 0x1F) | 0xE0;
+ 158   1          P2 &= 0x1F;
+ 159   1      }
+ 160          
+ 161          void Timer1Init(void)
+ 162          {
+ 163   1          AUXR &= 0xBF;
+ 164   1          TMOD &= 0x0F;
+ 165   1          TL1 = 0x18;
+ 166   1          TH1 = 0xFC;
+ 167   1          TF1 = 0;
+ 168   1          TR1 = 1;
+ 169   1          ET1 = 1;
+ 170   1      }
+ 171          
+ 172          void Display_Seg(unsigned char p, unsigned char *b)
+ 173          {
+ 174   1          P0 = 0xFF;
+ 175   1          P2 = (P2 & 0x1F) | 0xE0;
+ 176   1          P2 &= 0x1F;
+ 177   1      
+ 178   1          P0 = 0x01 << p;
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 14:29:18 PAGE 4   
 
- 179   1          {
- 180   2              I2CStop();
- 181   2              return 0;
- 182   2          }
- 183   1          I2CReceiveByte();
- 184   1          I2CSendAck(0);
- 185   1          *result = I2CReceiveByte();
- 186   1          I2CSendAck(1);
- 187   1          I2CStop();
- 188   1          return 1;
- 189   1      }
- 190          
- 191          void DisplayADC(unsigned char value, unsigned char valid)
- 192          {
- 193   1          unsigned char hundreds;
- 194   1          unsigned char tens;
- 195   1          unsigned char units;
- 196   1      
- 197   1          hundreds = 0xBF;
- 198   1          tens = 0xBF;
- 199   1          units = 0xBF;
- 200   1          if(valid)
- 201   1          {
- 202   2              hundreds = table[value / 100];
- 203   2              tens = table[value / 10 % 10];
- 204   2              units = table[value % 10];
- 205   2          }
- 206   1          EA = 0;
- 207   1          display_buf[5] = hundreds;
- 208   1          display_buf[6] = tens;
- 209   1          display_buf[7] = units;
- 210   1          EA = 1;
- 211   1      }
- 212          
- 213          void DisplayScan(void)
- 214          {
- 215   1          static unsigned char pos = 0;
- 216   1      
- 217   1          LatchWrite(0xC0, 0x00);
- 218   1          LatchWrite(0xE0, display_buf[pos]);
- 219   1          LatchWrite(0xC0, (unsigned char)(1 << pos));
- 220   1          pos++;
- 221   1          if(pos == 8)
- 222   1          {
- 223   2              pos = 0;
- 224   2          }
- 225   1      }
- 226          
- 227          void main(void)
- 228          {
- 229   1          unsigned char value;
- 230   1          unsigned char valid;
- 231   1      
- 232   1          BoardInit();
- 233   1          I2C_SCL = 1;
- 234   1          I2C_SDA = 1;
- 235   1          value = 0;
- 236   1          Timer1Init();
- 237   1          while(1)
+ 179   1          P2 = (P2 & 0x1F) | 0xC0;
+ 180   1          P2 &= 0x1F;
+ 181   1      
+ 182   1          P0 = b[p];
+ 183   1          P2 = (P2 & 0x1F) | 0xE0;
+ 184   1          P2 &= 0x1F;
+ 185   1      }
+ 186          
+ 187          void Tran_string(char *str, unsigned char *b)
+ 188          {
+ 189   1          unsigned char i = 0;
+ 190   1          unsigned char j = 0;
+ 191   1          unsigned char temp;
+ 192   1      
+ 193   1          for(i = 0; i < 8; i++, j++)
+ 194   1          {
+ 195   2              switch(str[j])
+ 196   2              {
+ 197   3                  case '0': temp = 0xC0; break;
+ 198   3                  case '1': temp = 0xF9; break;
+ 199   3                  case '2': temp = 0xA4; break;
+ 200   3                  case '3': temp = 0xB0; break;
+ 201   3                  case '4': temp = 0x99; break;
+ 202   3                  case '5': temp = 0x92; break;
+ 203   3                  case '6': temp = 0x82; break;
+ 204   3                  case '7': temp = 0xF8; break;
+ 205   3                  case '8': temp = 0x80; break;
+ 206   3                  case '9': temp = 0x90; break;
+ 207   3                  case 'A': temp = 0x88; break;
+ 208   3                  case 'B': temp = 0x83; break;
+ 209   3                  case 'C': temp = 0xC6; break;
+ 210   3                  case 'D': temp = 0xA1; break;
+ 211   3                  case 'E': temp = 0x86; break;
+ 212   3                  case 'F': temp = 0x8E; break;
+ 213   3                  case '.': temp = 0x7F; break;
+ 214   3                  case '-': temp = 0xBF; break;
+ 215   3                  default: temp = 0xFF; break;
+ 216   3              }
+ 217   2      
+ 218   2              if(str[j + 1] == '.')
+ 219   2              {
+ 220   3                  temp &= 0x7F;
+ 221   3                  j++;
+ 222   3              }
+ 223   2      
+ 224   2              b[i] = temp;
+ 225   2          }
+ 226   1      }
+ 227          
+ 228          void UpdateADCDisplay(void)
+ 229          {
+ 230   1          ADC_value = PCF8591_ADC(VA);
+ 231   1          sprintf(string, "-----%03u", (unsigned int)ADC_value);
+ 232   1          Tran_string(string, buf);
+ 233   1      }
+ 234          
+ 235          void Seg_Process(void)
+ 236          {
+ 237   1          if(delay_seg)
  238   1          {
- 239   2              if(adc_due)
- 240   2              {
-C51 COMPILER V9.54   MAIN                                                                  09/12/2026 09:50:35 PAGE 5   
+ 239   2              return;
+ 240   2          }
+C51 COMPILER V9.54   MAIN                                                                  09/30/2026 14:29:18 PAGE 5   
 
- 241   3                  adc_due = 0;
- 242   3                  valid = PCF8591Read(&value);
- 243   3                  DisplayADC(value, valid);
- 244   3              }
- 245   2          }
- 246   1      }
- 247          
- 248          void Timer1_ISR(void) interrupt 3
- 249          {
- 250   1          static unsigned char elapsed = 0;
- 251   1      
- 252   1          DisplayScan();
- 253   1          elapsed++;
- 254   1          if(elapsed >= 200)
- 255   1          {
- 256   2              elapsed = 0;
- 257   2              adc_due = 1;
- 258   2          }
+ 241   1      
+ 242   1          delay_seg = 1;
+ 243   1          UpdateADCDisplay();
+ 244   1      }
+ 245          
+ 246          void ServiceTimer1(void) interrupt 3
+ 247          {
+ 248   1          if(++delay_seg == 200)
+ 249   1          {
+ 250   2              delay_seg = 0;
+ 251   2          }
+ 252   1      
+ 253   1          if(++pos == 8)
+ 254   1          {
+ 255   2              pos = 0;
+ 256   2          }
+ 257   1      
+ 258   1          Display_Seg(pos, buf);
  259   1      }
+ 260          
+ 261          void main(void)
+ 262          {
+ 263   1          InitSystem();
+ 264   1      
+ 265   1          SDA = 1;
+ 266   1          SCL = 1;
+ 267   1      
+ 268   1          UpdateADCDisplay();
+ 269   1          delay_seg = 1;
+ 270   1      
+ 271   1          Timer1Init();
+ 272   1          EA = 1;
+ 273   1      
+ 274   1          while(1)
+ 275   1          {
+ 276   2              Seg_Process();
+ 277   2          }
+ 278   1      }
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE
-   CODE SIZE        =    470    ----
-   CONSTANT SIZE    =     16    ----
+   CODE SIZE        =    712    ----
+   CONSTANT SIZE    =     10    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-   DATA SIZE        =     10       1
+   DATA SIZE        =     21       9
    IDATA SIZE       =   ----    ----
-   BIT SIZE         =      1    ----
+   BIT SIZE         =   ----       2
 END OF MODULE INFORMATION.
 
 

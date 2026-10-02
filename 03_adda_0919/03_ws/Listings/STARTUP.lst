@@ -1,4 +1,4 @@
-A51 MACRO ASSEMBLER  STARTUP                                                              09/12/2026 09:50:10 PAGE     1
+A51 MACRO ASSEMBLER  STARTUP                                                              10/03/2026 03:27:46 PAGE     1
 
 
 MACRO ASSEMBLER A51 V8.02c
@@ -43,7 +43,7 @@ LOC  OBJ            LINE     SOURCE
 001D 020000   F       33         LJMP ?C_START
                       34     
                       35     END
-A51 MACRO ASSEMBLER  STARTUP                                                              09/12/2026 09:50:10 PAGE     2
+A51 MACRO ASSEMBLER  STARTUP                                                              10/03/2026 03:27:46 PAGE     2
 
 SYMBOL TABLE LISTING
 ------ ----- -------

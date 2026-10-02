@@ -7,10 +7,15 @@
 sfr AUXR = 0x8E;
 sfr P4 = 0xC0;
 
-sbit COL0 = P3^4;
-sbit COL1 = P3^5;
+sbit ROW1 = P3^0;
+sbit ROW2 = P3^1;
+sbit ROW3 = P3^2;
+sbit ROW4 = P3^3;
+
+sbit COL1 = P4^4;
 sbit COL2 = P4^2;
-sbit COL3 = P4^4;
+sbit COL3 = P3^5;
+sbit COL4 = P3^4;
 
 unsigned char code table[16] = {
     0xC0, 0xF9, 0xA4, 0xB0,
@@ -19,14 +24,10 @@ unsigned char code table[16] = {
     0xC6, 0xA1, 0x86, 0x8E
 };
 
-unsigned char code rows[4] = {
-    0xFE, 0xFD, 0xFB, 0xF7
-};
-
 volatile bit tick_1ms = 0;
 
 volatile unsigned char display_buf[4] = {
-    0xFF, 0xFF, 0xFF, 0xC0
+    0xFF, 0xFF, 0xFF, 0xFF
 };
 
 void LatchWrite(unsigned char select, unsigned char value)
@@ -46,31 +47,23 @@ void BoardInit(void)
     P2 &= 0x1F;
     P0 = 0x00;
 
-    P2 |= 0xA0;
-    _nop_();
-    P2 &= 0x1F;
+    LatchWrite(0x80, 0xFF);
+    LatchWrite(0xA0, 0x00);
+    LatchWrite(0xC0, 0x00);
+    LatchWrite(0xE0, 0xFF);
 
-    P2 |= 0xC0;
-    _nop_();
     P2 &= 0x1F;
-
-    P0 = 0xFF;
-    P2 |= 0xE0;
-    _nop_();
-    P2 &= 0x1F;
-
-    P2 |= 0x80;
-    _nop_();
-    P2 &= 0x1F;
-
     P0 = 0x00;
 
-    P3 = 0xFF;
+    ROW1 = 1;
+    ROW2 = 1;
+    ROW3 = 1;
+    ROW4 = 1;
 
-    COL0 = 1;
     COL1 = 1;
     COL2 = 1;
     COL3 = 1;
+    COL4 = 1;
 }
 
 void Timer1Init(void)
@@ -95,178 +88,187 @@ void KeySettle(void)
 {
     unsigned char i;
 
-    for(i = 0; i < 20; i++)
+    for(i = 0; i < 50; i++)
     {
         _nop_();
     }
 }
 
-unsigned char KeyRead(void)
+unsigned char KeyScan(void)
 {
-    unsigned char row;
-    unsigned char col;
-    unsigned char count;
+    ROW1 = 1;
+    ROW2 = 1;
+    ROW3 = 1;
+    ROW4 = 1;
 
-    row = 0;
-    col = 0;
-    count = 0;
-
-    P3 = 0xF0;
-
-    COL0 = 1;
     COL1 = 1;
     COL2 = 1;
     COL3 = 1;
+    COL4 = 1;
 
+    COL4 = 0;
     KeySettle();
 
-    if(!COL0)
+    if(ROW1 == 0)
     {
-        col = 0;
-        count++;
+        COL4 = 1;
+        return 4;
     }
 
-    if(!COL1)
+    if(ROW2 == 0)
     {
-        col = 1;
-        count++;
+        COL4 = 1;
+        return 8;
     }
 
-    if(!COL2)
+    if(ROW3 == 0)
     {
-        col = 2;
-        count++;
+        COL4 = 1;
+        return 12;
     }
 
-    if(!COL3)
+    if(ROW4 == 0)
     {
-        col = 3;
-        count++;
+        COL4 = 1;
+        return 16;
     }
 
-    if(count == 0)
-    {
-        P3 = 0xFF;
-        COL0 = 1;
-        COL1 = 1;
-        COL2 = 1;
-        COL3 = 1;
-        return 0;
-    }
-
-    if(count != 1)
-    {
-        P3 = 0xFF;
-        COL0 = 1;
-        COL1 = 1;
-        COL2 = 1;
-        COL3 = 1;
-        return 0xFF;
-    }
-
-    P3 = 0xFF;
-
-    COL0 = 1;
-    COL1 = 1;
-    COL2 = 1;
-    COL3 = 1;
-
-    if(col == 0)
-    {
-        COL0 = 0;
-    }
-    else if(col == 1)
-    {
-        COL1 = 0;
-    }
-    else if(col == 2)
-    {
-        COL2 = 0;
-    }
-    else
-    {
-        COL3 = 0;
-    }
-
+    COL4 = 1;
     KeySettle();
 
-    count = 0;
+    COL1 = 0;
+    KeySettle();
 
-    if(!(P3 & 0x01))
+    if(ROW1 == 0)
     {
-        row = 0;
-        count++;
+        COL1 = 1;
+        return 1;
     }
 
-    if(!(P3 & 0x02))
+    if(ROW2 == 0)
     {
-        row = 1;
-        count++;
+        COL1 = 1;
+        return 5;
     }
 
-    if(!(P3 & 0x04))
+    if(ROW3 == 0)
     {
-        row = 2;
-        count++;
+        COL1 = 1;
+        return 9;
     }
 
-    if(!(P3 & 0x08))
+    if(ROW4 == 0)
     {
-        row = 3;
-        count++;
+        COL1 = 1;
+        return 13;
     }
 
-    P3 = 0xFF;
-
-    COL0 = 1;
     COL1 = 1;
+    KeySettle();
+
+    COL2 = 0;
+    KeySettle();
+
+    if(ROW1 == 0)
+    {
+        COL2 = 1;
+        return 2;
+    }
+
+    if(ROW2 == 0)
+    {
+        COL2 = 1;
+        return 6;
+    }
+
+    if(ROW3 == 0)
+    {
+        COL2 = 1;
+        return 10;
+    }
+
+    if(ROW4 == 0)
+    {
+        COL2 = 1;
+        return 14;
+    }
+
     COL2 = 1;
+    KeySettle();
+
+    COL3 = 0;
+    KeySettle();
+
+    if(ROW1 == 0)
+    {
+        COL3 = 1;
+        return 3;
+    }
+
+    if(ROW2 == 0)
+    {
+        COL3 = 1;
+        return 7;
+    }
+
+    if(ROW3 == 0)
+    {
+        COL3 = 1;
+        return 11;
+    }
+
+    if(ROW4 == 0)
+    {
+        COL3 = 1;
+        return 15;
+    }
+
     COL3 = 1;
 
-    if(count != 1)
-    {
-        return 0xFF;
-    }
+    return 0;
+}
 
-    return row * 4 + col + 1;
+void DelayMs(unsigned int ms)
+{
+    while(ms)
+    {
+        if(tick_1ms)
+        {
+            tick_1ms = 0;
+            ms--;
+        }
+    }
 }
 
 unsigned char KeyEvent(void)
 {
-    static unsigned char previous = 0;
-    static unsigned char stable = 0;
-    static unsigned char samples = 0;
-    static unsigned char armed = 1;
+    static unsigned char locked = 0;
+    unsigned char key;
 
-    unsigned char raw;
+    key = KeyScan();
 
-    raw = KeyRead();
-
-    if(raw != previous)
+    if(locked == 0)
     {
-        previous = raw;
-        samples = 0;
-    }
-    else if(samples < 20)
-    {
-        samples++;
-    }
-
-    if(samples == 20 && raw != stable)
-    {
-        stable = raw;
-
-        if(raw == 0)
+        if(key >= 1 && key <= 16)
         {
-            armed = 1;
-        }
-        else if(armed)
-        {
-            armed = 0;
+            DelayMs(10);
 
-            if(raw != 0xFF)
+            if(KeyScan() == key)
             {
-                return raw;
+                locked = 1;
+                return key;
+            }
+        }
+    }
+    else
+    {
+        if(key == 0)
+        {
+            DelayMs(10);
+
+            if(KeyScan() == 0)
+            {
+                locked = 0;
             }
         }
     }
@@ -318,49 +320,26 @@ void DisplayScan(void)
 
     pos++;
 
-    if(pos == 4)
+    if(pos >= 4)
     {
         pos = 0;
     }
 }
 
-void DelayMs(unsigned int ms)
-{
-    while(ms)
-    {
-        if(tick_1ms)
-        {
-            tick_1ms = 0;
-            ms--;
-        }
-    }
-}
 void main(void)
 {
     unsigned char key;
-    unsigned char key2;
 
     BoardInit();
     Timer1Init();
 
     while(1)
     {
-        key = KeyRead();
+        key = KeyEvent();
 
         if(key >= 1 && key <= 16)
         {
-            DelayMs(20);
-
-            key2 = KeyRead();
-
-            if(key2 == key)
-            {
-                DisplaySquare(key);
-
-                while(KeyRead() != 0);
-
-                DelayMs(20);
-            }
+            DisplaySquare(key);
         }
     }
 }
